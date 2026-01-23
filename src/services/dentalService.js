@@ -20,6 +20,21 @@ export const dentalService = {
         return await pb.collection('tratamientos_dentales').delete(id);
     },
 
+    // Resources (Sillones)
+    getResources: async () => {
+        return await pb.collection('resources').getFullList({
+            sort: 'created',
+        });
+    },
+
+    createResource: async (data) => {
+        return await pb.collection('resources').create(data);
+    },
+
+    deleteResource: async (id) => {
+        return await pb.collection('resources').delete(id);
+    },
+
     // Budgets
     getBudgets: async (patientId) => {
         return await pb.collection('presupuestos').getFullList({

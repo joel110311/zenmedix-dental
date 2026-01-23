@@ -614,6 +614,64 @@
     ]
   },
   {
+    "id": "pbc_resources01",
+    "name": "resources",
+    "type": "base",
+    "system": false,
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.role = 'superadmin' || @request.auth.role = 'medico'",
+    "updateRule": "@request.auth.role = 'superadmin' || @request.auth.role = 'medico'",
+    "deleteRule": "@request.auth.role = 'superadmin' || @request.auth.role = 'medico'",
+    "fields": [
+      {
+        "id": "text3208210256",
+        "name": "id",
+        "type": "text",
+        "system": true,
+        "required": true,
+        "primaryKey": true,
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "min": 15,
+        "max": 15,
+        "pattern": "^[a-z0-9]+$"
+      },
+      {
+        "id": "textName0000001",
+        "name": "name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "textColor000001",
+        "name": "color",
+        "type": "text",
+        "required": false
+      },
+      {
+        "id": "boolActive00001",
+        "name": "active",
+        "type": "bool",
+        "required": false
+      },
+      {
+        "id": "autodate2990389176",
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false
+      },
+      {
+        "id": "autodate3332085495",
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true
+      }
+    ],
+    "indexes": []
+  },
+  {
     "id": "pbc_config00001",
     "name": "config",
     "type": "base",

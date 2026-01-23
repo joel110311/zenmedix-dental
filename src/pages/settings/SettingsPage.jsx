@@ -4,6 +4,7 @@ import { THEMES, MODES, getConfigTheme, saveConfigTheme, getConfigMode, saveConf
 import { useSettings } from '../../context/SettingsContext';
 import { exportBackup, importBackup, getBackupInfo, getStorageStats } from '../../services/backupService';
 import { api } from '../../services/api';
+import { dentalService } from '../../services/dentalService';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -260,6 +261,89 @@ export default function SettingsPage() {
     const [whatsappReminderHour, setWhatsappReminderHour] = useState(settings.whatsapp?.reminderHour || 'disabled');
     const [whatsappTimezone, setWhatsappTimezone] = useState(settings.whatsapp?.timezone || 'America/Mexico_City');
 
+    // Resources & Treatments State
+    const [resources, setResources] = useState([]);
+    const [treatments, setTreatments] = useState([]);
+    const [newResourceName, setNewResourceName] = useState('');
+    const [newTreatmentName, setNewTreatmentName] = useState('');
+    const [newTreatmentPrice, setNewTreatmentPrice] = useState('');
+    const [newTreatmentCategory, setNewTreatmentCategory] = useState('Preventiva');
+
+    useEffect(() => {
+        if (activeSection === 'resources') loadResources();
+        if (activeSection === 'treatments') loadTreatments();
+    }, [activeSection]);
+
+    const loadResources = async () => {
+        try {
+            const data = await dentalService.getResources();
+            setResources(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const loadTreatments = async () => {
+        try {
+            const data = await dentalService.getTreatments();
+            setTreatments(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleAddResource = async () => {
+        if (!newResourceName) return;
+        try {
+            await dentalService.createResource({ name: newResourceName, active: true });
+            toast.success('Consultorio/Sillón agregado');
+            setNewResourceName('');
+            loadResources();
+        } catch (error) {
+            toast.error('Error al agregar recurso');
+        }
+    };
+
+    const handleDeleteResource = async (id) => {
+        if (!confirm('¿Estás seguro?')) return;
+        try {
+            await dentalService.deleteResource(id);
+            toast.success('Eliminado');
+            loadResources();
+        } catch (error) {
+            toast.error('Error al eliminar');
+        }
+    };
+
+    const handleAddTreatment = async () => {
+        if (!newTreatmentName || !newTreatmentPrice) return;
+        try {
+            await dentalService.createTreatment({
+                name: newTreatmentName,
+                price: parseFloat(newTreatmentPrice),
+                category: newTreatmentCategory,
+                code: newTreatmentName.substring(0, 3).toUpperCase() + Math.floor(Math.random() * 100)
+            });
+            toast.success('Tratamiento agregado');
+            setNewTreatmentName('');
+            setNewTreatmentPrice('');
+            loadTreatments();
+        } catch (error) {
+            toast.error('Error al agregar tratamiento');
+        }
+    };
+
+    const handleDeleteTreatment = async (id) => {
+        if (!confirm('¿Estás seguro?')) return;
+        try {
+            await dentalService.deleteTreatment(id);
+            toast.success('Eliminado');
+            loadTreatments();
+        } catch (error) {
+            toast.error('Error al eliminar');
+        }
+    };
+
     const handleThemeChange = (themeId) => {
         setCurrentTheme(themeId);
         saveConfigTheme(themeId);
@@ -355,6 +439,8 @@ export default function SettingsPage() {
         { id: 'design', label: 'Diseño', icon: Palette, description: 'Tema y visualización', color: 'from-violet-500 to-purple-500', superAdminOnly: false },
         { id: 'users', label: 'Usuarios y Roles', icon: Users, description: 'Gestionar usuarios', color: 'from-emerald-500 to-teal-500', superAdminOnly: false },
         { id: 'clinic', label: 'Clínica', icon: Building2, description: 'Clinicas y doctores', color: 'from-blue-500 to-indigo-500', superAdminOnly: false },
+        { id: 'resources', label: 'Consultorios', icon: Hospital, description: 'Sillones y boxes', color: 'from-pink-500 to-rose-500', superAdminOnly: false },
+        { id: 'treatments', label: 'Lista de Precios', icon: Database, description: 'Tratamientos y costos', color: 'from-amber-500 to-orange-500', superAdminOnly: false },
         { id: 'automation', label: 'Automatización', icon: Settings, description: 'Bot y horarios n8n', color: 'from-cyan-500 to-blue-500', superAdminOnly: true },
         { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, description: 'Automatización YCloud', color: 'from-green-500 to-emerald-500', superAdminOnly: true },
         { id: 'webhooks', label: 'Webhooks', icon: Link2, description: 'Conexiones API', color: 'from-orange-500 to-red-500', superAdminOnly: true },
@@ -866,6 +952,112 @@ export default function SettingsPage() {
                             <Button onClick={handleSaveWhatsApp}>
                                 <Save className="w-4 h-4 mr-2" /> Guardar Configuración WhatsApp
                             </Button>
+                        </div>
+                    </Card>
+                )}
+
+                {/* RESOURCES TAB */}
+                {activeSection === 'resources' && (
+                    <Card title="Consultorios / Sillones">
+                        <div className="flex gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                            <input
+                                type="text"
+                                placeholder="Nombre (ej. Sillón 1, Rayos X)"
+                                value={newResourceName}
+                                onChange={(e) => setNewResourceName(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            />
+                            <Button onClick={handleAddResource}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
+                        </div>
+                        <div className="space-y-2">
+                            {resources.map(r => (
+                                <div key={r.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-slate-700">
+                                    <span className="font-medium text-slate-800 dark:text-white">{r.name}</span>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteResource(r.id)} className="text-red-500">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            {resources.length === 0 && <p className="text-center text-slate-500 py-4">No hay consultorios registrados</p>}
+                        </div>
+                    </Card>
+                )}
+
+                {/* TREATMENTS TAB */}
+                {activeSection === 'treatments' && (
+                    <Card title="Lista de Precios y Tratamientos">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg items-end">
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-slate-500 mb-1 block">Nombre del Tratamiento</label>
+                                <input
+                                    type="text"
+                                    placeholder="ej. Limpieza Dental"
+                                    value={newTreatmentName}
+                                    onChange={(e) => setNewTreatmentName(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-500 mb-1 block">Precio</label>
+                                <input
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={newTreatmentPrice}
+                                    onChange={(e) => setNewTreatmentPrice(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-500 mb-1 block">Categoría</label>
+                                <select
+                                    value={newTreatmentCategory}
+                                    onChange={(e) => setNewTreatmentCategory(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                >
+                                    <option>Preventiva</option>
+                                    <option>Restauradora</option>
+                                    <option>Endodoncia</option>
+                                    <option>Cirugía</option>
+                                    <option>Ortodoncia</option>
+                                    <option>Estética</option>
+                                    <option>Otros</option>
+                                </select>
+                            </div>
+                            <div className="md:col-span-4 flex justify-end mt-2">
+                                <Button onClick={handleAddTreatment}><Plus className="w-4 h-4 mr-1" /> Agregar Tratamiento</Button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500">
+                                    <tr>
+                                        <th className="px-4 py-3 rounded-tl-lg">Nombre</th>
+                                        <th className="px-4 py-3">Categoría</th>
+                                        <th className="px-4 py-3">Precio</th>
+                                        <th className="px-4 py-3 rounded-tr-lg text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                    {treatments.map(t => (
+                                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                            <td className="px-4 py-3 font-medium text-slate-800 dark:text-white">{t.name}</td>
+                                            <td className="px-4 py-3 text-slate-500">{t.category}</td>
+                                            <td className="px-4 py-3 text-green-600 font-medium">${t.price}</td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Button variant="ghost" size="sm" onClick={() => handleDeleteTreatment(t.id)} className="text-red-500">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {treatments.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="text-center py-8 text-slate-400">No hay tratamientos registrados</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </Card>
                 )}

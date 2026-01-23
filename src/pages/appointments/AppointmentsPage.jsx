@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { CalendarPlus, Trash2, Search, Clock, User, Phone, ChevronLeft, ChevronRight, Building2, FileText, MessageCircle, ExternalLink, Plus, Save } from 'lucide-react';
 import { api } from '../../services/api';
 import { useSettings } from '../../context/SettingsContext';
+import { dentalService } from '../../services/dentalService';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
@@ -24,10 +25,8 @@ const CONSULTATION_REASONS = [
     'Limpieza Dental',
 ];
 
-const RESOURCES = [
+const RESOURCES_FALLBACK = [
     { id: 'sillon-1', name: 'Sillón 1' },
-    { id: 'sillon-2', name: 'Sillón 2' },
-    { id: 'sillon-3', name: 'Sillón 3' },
 ];
 
 // Webhook helper
@@ -55,6 +54,7 @@ export default function AppointmentsPage() {
     const [activeTab, setActiveTab] = useState('calendar');
     const [appointments, setAppointments] = useState([]);
     const [patients, setPatients] = useState([]);
+    const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -107,12 +107,14 @@ export default function AppointmentsPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [appts, pts] = await Promise.all([
+            const [appts, pts, res] = await Promise.all([
                 api.appointments.list(),
-                api.patients.list()
+                api.patients.list(),
+                dentalService.getResources()
             ]);
             setAppointments(appts);
             setPatients(pts);
+            setResources(res && res.length > 0 ? res : RESOURCES_FALLBACK);
         } catch (error) {
             console.error(error);
         } finally {
@@ -191,7 +193,7 @@ export default function AppointmentsPage() {
             );
 
             if (conflict) {
-                toast.error(`El ${RESOURCES.find(r => r.id === resourceId)?.name} ya está ocupado en ese horario.`);
+                toast.error(`El ${resources.find(r => r.id === resourceId)?.name} ya está ocupado en ese horario.`);
                 return;
             }
 
@@ -380,7 +382,7 @@ export default function AppointmentsPage() {
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
                                 >
                                     <option value="all">(TODOS)</option>
-                                    {RESOURCES.map(r => (
+                                    {resources.map(r => (
                                         <option key={r.id} value={r.id}>{r.name}</option>
                                     ))}
                                 </select>
@@ -627,7 +629,7 @@ export default function AppointmentsPage() {
                                 <Building2 className="w-4 h-4 inline mr-1" /> Sillón / Box *
                             </label>
                             <div className="flex gap-4">
-                                {RESOURCES.map(r => (
+                                {resources.map(r => (
                                     <label key={r.id} className="flex items-center gap-2 cursor-pointer border p-3 rounded-lg hover:bg-slate-50 has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all">
                                         <input
                                             type="radio"
