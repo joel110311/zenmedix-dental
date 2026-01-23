@@ -53,7 +53,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VITE_POCKETBASE_URL=https://api-consultorio.logicapp.net
+            VITE_POCKETBASE_URL=https://api-dental.logicapp.net
 
   notify-portainer:
     needs: build-and-push
