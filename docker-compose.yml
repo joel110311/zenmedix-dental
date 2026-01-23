@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Frontend - Zenmedix
+  zenmedix-frontend:
+    # IMPORTANTE: Usamos el nombre correcto de TU imagen en GitHub
+    image: ghcr.io/joel110311/zenmedix-dental:latest
+    networks:
+      - SociosNet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        # Dominio Frontend
+        - "traefik.http.routers.zenmedix.rule=Host(`dental.logicapp.net`)"
+        - "traefik.http.routers.zenmedix.entrypoints=websecure"
+        - "traefik.http.routers.zenmedix.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.zenmedix.loadbalancer.server.port=80"
+        - "traefik.docker.network=SociosNet"
+
+  # Backend - PocketBase
+  zenmedix-backend:
+    image: spectado/pocketbase:latest
+    volumes:
+      # Usamos el volumen nombrado igual que en el que funciona
+      - pb_data:/pb_data
+    networks:
+      - SociosNet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        # Dominio API
+        - "traefik.http.routers.zenmedix-api.rule=Host(`api-dental.logicapp.net`)"
+        - "traefik.http.routers.zenmedix-api.entrypoints=websecure"
+        - "traefik.http.routers.zenmedix-api.tls.certresolver=letsencryptresolver"
+        # Usamos Puerto 80 igual que en tu ejemplo funcional
+        - "traefik.http.services.zenmedix-api.loadbalancer.server.port=80"
+        - "traefik.docker.network=SociosNet"
+
+# Definición del volumen
+volumes:
+  pb_data:
+
+# Definición de la red externa
+networks:
+  SociosNet:
+    external: true

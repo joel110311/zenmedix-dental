@@ -1,0 +1,770 @@
+import { useState, useEffect, useMemo } from 'react';
+import { CalendarPlus, Trash2, Search, Clock, User, Phone, ChevronLeft, ChevronRight, Building2, FileText, MessageCircle, ExternalLink, Plus, Save } from 'lucide-react';
+import { api } from '../../services/api';
+import { useSettings } from '../../context/SettingsContext';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Spinner } from '../../components/ui/Spinner';
+import { toast } from 'sonner';
+
+// Common consultation reasons
+const CONSULTATION_REASONS = [
+    'Consulta General',
+    'Revisión de Estudios de Laboratorio',
+    'Certificado Médico',
+    'Curaciones',
+    'Procedimientos de Consultorio',
+    'Papanicolau / Citología',
+    'Control Prenatal',
+    'Control de Enfermedades Crónicas',
+    'Aplicación de Inyecciones o Medicamentos',
+    'Ortodoncia',
+    'Endodoncia',
+    'Cirugía',
+    'Limpieza Dental',
+];
+
+const RESOURCES = [
+    { id: 'sillon-1', name: 'Sillón 1' },
+    { id: 'sillon-2', name: 'Sillón 2' },
+    { id: 'sillon-3', name: 'Sillón 3' },
+];
+
+// Webhook helper
+const callWebhook = async (hookKey, payload, settings) => {
+    const url = settings.webhooks?.[hookKey];
+    if (!url) return null;
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        return res.ok;
+    } catch (error) {
+        console.error('Webhook error:', error);
+        return false;
+    }
+};
+
+import WeeklyCalendar from '../../components/appointments/WeeklyCalendar';
+import MiniCalendar from '../../components/appointments/MiniCalendar';
+
+export default function AppointmentsPage() {
+    const { settings } = useSettings();
+    const [activeTab, setActiveTab] = useState('calendar');
+    const [appointments, setAppointments] = useState([]);
+    const [patients, setPatients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [patientSearchTerm, setPatientSearchTerm] = useState('');
+    const [filteredDoctorId, setFilteredDoctorId] = useState('all');
+    const [filteredClinicId, setFilteredClinicId] = useState('all');
+    const [filteredResourceId, setFilteredResourceId] = useState('all');
+
+    const displayedAppointments = useMemo(() => {
+        let filtered = appointments;
+        if (filteredDoctorId !== 'all') {
+            filtered = filtered.filter(a => a.doctorId === filteredDoctorId || (a.doctor && a.doctor.id === filteredDoctorId));
+        }
+        if (filteredClinicId !== 'all') {
+            filtered = filtered.filter(a => a.clinicId === filteredClinicId || (a.clinic && a.clinic.id === filteredClinicId));
+        }
+        if (filteredResourceId !== 'all') {
+            filtered = filtered.filter(a => a.resource_id === filteredResourceId);
+        }
+        return filtered;
+    }, [appointments, filteredDoctorId, filteredClinicId, filteredResourceId]);
+
+    // Form state
+    const [selectedPatientId, setSelectedPatientId] = useState('');
+    const [date, setDate] = useState('');
+    const [time, setTime] = useState('');
+    const [doctorId, setDoctorId] = useState(settings.activeDoctor || '');
+    const [clinicId, setClinicId] = useState(settings.activeClinic || '');
+    const [resourceId, setResourceId] = useState('');
+    const [reason, setReason] = useState('');
+    const [customReason, setCustomReason] = useState('');
+    const [notes, setNotes] = useState('');
+
+    // New patient form state
+    const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+    const [newPatient, setNewPatient] = useState({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        dateOfBirth: '',
+        gender: '',
+        email: '',
+        address: ''
+    });
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [appts, pts] = await Promise.all([
+                api.appointments.list(),
+                api.patients.list()
+            ]);
+            setAppointments(appts);
+            setPatients(pts);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegisterNewPatient = async () => {
+        if (!newPatient.firstName || !newPatient.lastName || !newPatient.phone) {
+            toast.error('Nombre, apellido y teléfono son requeridos');
+            return;
+        }
+
+        try {
+            const patientData = {
+                firstName: newPatient.firstName,
+                lastName: newPatient.lastName,
+                phone: newPatient.phone,
+                dateOfBirth: newPatient.dateOfBirth || null,
+                gender: newPatient.gender || null,
+                email: newPatient.email || null,
+                address: newPatient.address || null
+            };
+
+            const created = await api.patients.create(patientData);
+
+            // Add to local patients list
+            setPatients(prev => [...prev, created]);
+
+            // Auto-select the new patient
+            setSelectedPatientId(created.id);
+            setPatientSearchTerm(`${created.firstName} ${created.lastName}`);
+
+            // Reset form and close
+            setNewPatient({
+                firstName: '',
+                lastName: '',
+                phone: '',
+                dateOfBirth: '',
+                gender: '',
+                email: '',
+                address: ''
+            });
+            setShowNewPatientForm(false);
+
+            toast.success('Paciente registrado y seleccionado');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al registrar paciente');
+        }
+    };
+    const handleSchedule = async () => {
+        if (!selectedPatientId || !date || !time) {
+            toast.error('Selecciona un paciente, fecha y hora');
+            return;
+        }
+
+        const selectedPatient = patients.find(p => p.id === selectedPatientId);
+        if (!selectedPatient) {
+            toast.error('Paciente no encontrado');
+            return;
+        }
+
+        const patientName = `${selectedPatient.firstName} ${selectedPatient.lastName}`;
+        const phone = selectedPatient.phone || '';
+        const finalReason = reason === 'Otro' ? customReason : reason;
+
+        try {
+            // Overlap Validation
+            // Check if any existing appointment has the same date, time, and resource_id
+            const conflict = appointments.find(appt =>
+                appt.date === date &&
+                appt.time === time &&
+                appt.resource_id === resourceId &&
+                appt.status !== 'cancelled' // Ignore cancelled
+            );
+
+            if (conflict) {
+                toast.error(`El ${RESOURCES.find(r => r.id === resourceId)?.name} ya está ocupado en ese horario.`);
+                return;
+            }
+
+            // Check Google Calendar availability via n8n webhook if configured
+            if (settings.webhooks?.availability) {
+                toast.loading('Verificando disponibilidad...', { id: 'availability-check' });
+                try {
+                    const checkRes = await fetch(settings.webhooks.availability, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            date,
+                            time,
+                            duration: 30, // Default 30 min appointment
+                            doctorId,
+                            clinicId,
+                            resourceId
+                        })
+                    });
+
+                    if (checkRes.ok) {
+                        const availabilityData = await checkRes.json();
+                        // Expect response: { available: true/false, message?: string }
+                        if (availabilityData.available === false) {
+                            toast.dismiss('availability-check');
+                            toast.error(availabilityData.message || 'Horario no disponible en Google Calendar');
+                            return;
+                        }
+                    }
+                    toast.dismiss('availability-check');
+                } catch (webhookError) {
+                    console.error('Error checking availability:', webhookError);
+                    toast.dismiss('availability-check');
+                    // Continue anyway if webhook fails - don't block appointment
+                    toast.warning('No se pudo verificar disponibilidad, continuando...');
+                }
+            }
+
+            const appointment = await api.appointments.create({
+                patientId: selectedPatientId,
+                patientName,
+                phone,
+                date,
+                time,
+                doctorId,
+                clinicId,
+                resource_id: resourceId,
+                reason: finalReason || 'Consulta General',
+                notes,
+                status: 'scheduled',
+                doctor: settings.doctors?.find(d => d.id === doctorId),
+                clinic: settings.clinics?.find(c => c.id === clinicId)
+            });
+
+            if (settings.webhooks?.schedule) {
+                await callWebhook('schedule', appointment, settings);
+            }
+
+            setAppointments([appointment, ...appointments]);
+            // Clear form
+            setSelectedPatientId('');
+            setPatientSearchTerm('');
+            setDate('');
+            setTime('');
+            setResourceId('');
+            setReason('');
+            setCustomReason('');
+            setNotes('');
+            toast.success('Cita agendada exitosamente');
+        } catch (error) {
+            toast.error('Error al agendar cita');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            const appointment = appointments.find(a => a.id === id);
+            await api.appointments.delete(id);
+
+            if (settings.webhooks?.delete) {
+                await callWebhook('delete', appointment, settings);
+            }
+
+            setAppointments(appointments.filter(a => a.id !== id));
+            toast.success('Cita eliminada');
+        } catch (error) {
+            toast.error('Error al eliminar');
+        }
+    };
+
+    // Filter appointments for delete tab: only show today and future
+    const todayStr = new Date().toISOString().split('T')[0];
+    const futureAppointments = appointments.filter(a => {
+        return a.date >= todayStr;
+    });
+
+    const filteredAppointments = futureAppointments.filter(a =>
+        a.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.phone?.includes(searchTerm)
+    );
+
+    return (
+        <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Gestión de Citas</h1>
+
+            {/* Tab Buttons */}
+            <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('calendar')}
+                    className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === 'calendar'
+                        ? 'text-primary border-b-2 border-primary'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <CalendarPlus className="w-4 h-4" /> Calendario
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('schedule')}
+                    className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === 'schedule'
+                        ? 'text-primary border-b-2 border-primary'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <CalendarPlus className="w-4 h-4" /> Agendar
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('delete')}
+                    className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === 'delete'
+                        ? 'text-primary border-b-2 border-primary'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                </button>
+            </div>
+
+            {/* Calendar Tab */}
+            {activeTab === 'calendar' && (
+                <div className="flex flex-col xl:flex-row gap-6">
+                    <div className="flex-1 min-h-[600px]">
+                        <WeeklyCalendar
+                            appointments={displayedAppointments}
+                            currentDate={selectedDate}
+                            onDateChange={setSelectedDate}
+                        />
+                    </div>
+                    <div className="w-full xl:w-80 space-y-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Mostrar citas
+                            </label>
+                            <div>
+                                <label className="text-xs text-slate-500 mb-1 block">Médico *</label>
+                                <select
+                                    value={filteredDoctorId}
+                                    onChange={(e) => setFilteredDoctorId(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
+                                >
+                                    <option value="all">(TODOS)</option>
+                                    {settings.doctors?.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="mt-4">
+                                <label className="text-xs text-slate-500 mb-1 block">Clínica *</label>
+                                <select
+                                    value={filteredClinicId}
+                                    onChange={(e) => setFilteredClinicId(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
+                                >
+                                    <option value="all">(TODAS)</option>
+                                    {settings.clinics?.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="mt-4">
+                                <label className="text-xs text-slate-500 mb-1 block">Sillón</label>
+                                <select
+                                    value={filteredResourceId}
+                                    onChange={(e) => setFilteredResourceId(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
+                                >
+                                    <option value="all">(TODOS)</option>
+                                    {RESOURCES.map(r => (
+                                        <option key={r.id} value={r.id}>{r.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <MiniCalendar
+                            selectedDate={selectedDate}
+                            onDateChange={setSelectedDate}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Schedule Tab Content */}
+            {activeTab === 'schedule' && (
+                <Card>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="text-center flex-1">
+                            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <CalendarPlus className="w-8 h-8 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Nueva Cita</h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm">Completa los datos para agendar</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowNewPatientForm(!showNewPatientForm)}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Nuevo Paciente
+                        </button>
+                    </div>
+
+                    {/* Inline New Patient Form */}
+                    {showNewPatientForm && (
+                        <div className="mb-6 p-4 border-2 border-green-200 dark:border-green-800 rounded-xl bg-green-50 dark:bg-green-900/20">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
+                                    <input
+                                        type="text"
+                                        value={newPatient.firstName}
+                                        onChange={(e) => setNewPatient({ ...newPatient, firstName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                        placeholder="Nombre"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Apellido *</label>
+                                    <input
+                                        type="text"
+                                        value={newPatient.lastName}
+                                        onChange={(e) => setNewPatient({ ...newPatient, lastName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                        placeholder="Apellido"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono *</label>
+                                    <input
+                                        type="tel"
+                                        value={newPatient.phone}
+                                        onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                        placeholder="Teléfono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha de Nacimiento</label>
+                                    <input
+                                        type="date"
+                                        value={newPatient.dateOfBirth}
+                                        onChange={(e) => setNewPatient({ ...newPatient, dateOfBirth: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sexo</label>
+                                    <select
+                                        value={newPatient.gender}
+                                        onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        value={newPatient.email}
+                                        onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                        placeholder="correo@ejemplo.com"
+                                    />
+                                </div>
+                                <div className="md:col-span-2 lg:col-span-3">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Dirección</label>
+                                    <input
+                                        type="text"
+                                        value={newPatient.address}
+                                        onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-green-500"
+                                        placeholder="Dirección"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewPatientForm(false)}
+                                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleRegisterNewPatient}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Registrar Paciente
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <User className="w-4 h-4 inline mr-1" /> Seleccionar Paciente *
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    autoComplete="off"
+                                    placeholder="Buscar paciente por nombre o teléfono..."
+                                    value={patientSearchTerm}
+                                    onChange={(e) => {
+                                        setPatientSearchTerm(e.target.value);
+                                        setSelectedPatientId('');
+                                    }}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                />
+                                {patientSearchTerm && !selectedPatientId && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        {patients
+                                            .filter(p =>
+                                                `${p.firstName} ${p.lastName}`.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
+                                                (p.phone && p.phone.includes(patientSearchTerm))
+                                            )
+                                            .slice(0, 8)
+                                            .map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedPatientId(p.id);
+                                                        setPatientSearchTerm(`${p.firstName} ${p.lastName}`);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-0"
+                                                >
+                                                    <div className="font-medium text-slate-800 dark:text-white">{p.firstName} {p.lastName}</div>
+                                                    <div className="text-xs text-slate-500">{p.phone || 'Sin teléfono'}</div>
+                                                </button>
+                                            ))
+                                        }
+                                        {patients.filter(p =>
+                                            `${p.firstName} ${p.lastName}`.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
+                                            (p.phone && p.phone.includes(patientSearchTerm))
+                                        ).length === 0 && (
+                                                <div className="px-3 py-2 text-sm text-slate-500">No se encontraron pacientes</div>
+                                            )}
+                                    </div>
+                                )}
+                            </div>
+                            {selectedPatientId && (() => {
+                                const p = patients.find(pt => pt.id === selectedPatientId);
+                                return p ? (
+                                    <div className="mt-2 flex items-center gap-2 text-sm bg-green-50 dark:bg-green-900/30 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800">
+                                        <span className="text-green-700 dark:text-green-300">✓ Paciente seleccionado:</span>
+                                        <span className="font-medium text-slate-800 dark:text-white">{p.firstName} {p.lastName}</span>
+                                        <span className="text-slate-500">| Tel: {p.phone || 'N/A'}</span>
+                                    </div>
+                                ) : null;
+                            })()}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha *</label>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hora *</label>
+                            <input
+                                type="time"
+                                value={time}
+                                onChange={(e) => setTime(e.target.value)}
+                                step="1800"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <Building2 className="w-4 h-4 inline mr-1" /> Clínica
+                            </label>
+                            <select
+                                value={clinicId}
+                                onChange={(e) => setClinicId(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            >
+                                {settings.clinics?.slice(0, 5).map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Médico</label>
+                            <select
+                                value={doctorId}
+                                onChange={(e) => setDoctorId(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            >
+                                {settings.doctors?.map(d => (
+                                    <option key={d.id} value={d.id}>{d.name} - {d.specialty}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <Building2 className="w-4 h-4 inline mr-1" /> Sillón / Box *
+                            </label>
+                            <div className="flex gap-4">
+                                {RESOURCES.map(r => (
+                                    <label key={r.id} className="flex items-center gap-2 cursor-pointer border p-3 rounded-lg hover:bg-slate-50 has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all">
+                                        <input
+                                            type="radio"
+                                            name="resource"
+                                            value={r.id}
+                                            checked={resourceId === r.id}
+                                            onChange={(e) => setResourceId(e.target.value)}
+                                            className="text-primary focus:ring-primary"
+                                        />
+                                        <span className="font-medium text-sm">{r.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <FileText className="w-4 h-4 inline mr-1" /> Motivo de Consulta
+                            </label>
+                            <select
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            >
+                                <option value="">Seleccionar motivo</option>
+                                {CONSULTATION_REASONS.map(r => (
+                                    <option key={r} value={r}>{r}</option>
+                                ))}
+                                <option value="Otro">Otro (especificar)</option>
+                            </select>
+                        </div>
+
+                        {reason === 'Otro' && (
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Especificar motivo</label>
+                                <input
+                                    type="text"
+                                    autoComplete="off"
+                                    placeholder="Describe el motivo de la consulta"
+                                    value={customReason}
+                                    onChange={(e) => setCustomReason(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                        )}
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas</label>
+                            <textarea
+                                autoComplete="off"
+                                placeholder="Observaciones adicionales..."
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    <Button
+                        className="w-full mt-6"
+                        size="lg"
+                        onClick={handleSchedule}
+                        disabled={!selectedPatientId || !date || !time || !resourceId}
+                    >
+                        <CalendarPlus className="w-5 h-5 mr-2" /> Agendar Cita
+                    </Button>
+                </Card>
+            )
+            }
+
+            {/* Delete Tab Content */}
+            {
+                activeTab === 'delete' && (
+                    <Card>
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <Trash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Eliminar Cita</h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm">Solo citas de hoy en adelante</p>
+                        </div>
+
+                        <div className="flex gap-2 mb-4">
+                            <input
+                                type="text"
+                                autoComplete="off"
+                                placeholder="Buscar por nombre o teléfono"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            />
+                            <Button variant="secondary">
+                                <Search className="w-4 h-4 mr-1" /> Buscar
+                            </Button>
+                        </div>
+
+                        {loading ? <Spinner /> : (
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {filteredAppointments.length === 0 ? (
+                                    <p className="text-center text-slate-400 py-8">No hay citas para mostrar</p>
+                                ) : (
+                                    filteredAppointments.map(appt => (
+                                        <div key={appt.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                    <User className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-slate-800 dark:text-white">{appt.patientName}</p>
+                                                    <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {appt.date} {appt.time}
+                                                        </span>
+                                                        {appt.phone && (
+                                                            <span className="flex items-center gap-1">
+                                                                <Phone className="w-3 h-3" />
+                                                                {appt.phone}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {appt.reason && (
+                                                        <p className="text-xs text-slate-400 mt-1">{appt.reason}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={() => handleDelete(appt.id)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </Card>
+                )
+            }
+        </div >
+    );
+}
