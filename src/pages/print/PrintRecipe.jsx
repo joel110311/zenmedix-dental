@@ -27,17 +27,21 @@ export default function PrintRecipe() {
         try {
             const consultData = await api.consultations.get(id);
             setConsultation(consultData);
-            setEditMeds(consultData.medications || []);
             setEditIndications(consultData.treatmentPlan || '');
-            const patientData = await api.patients.get(consultData.patientId);
-            setPatient(patientData);
+
+            // Try to get patient from expansion first, fallback to fetch
+            if (consultData.expand?.patient) {
+                setPatient(consultData.expand.patient);
+            } else if (consultData.patient) {
+                const patientData = await api.patients.get(consultData.patient);
+                setPatient(patientData);
+            } else {
+                throw new Error('No se encontró información del paciente en la consulta');
+            }
         } catch (error) {
-            console.error('FULL ERROR DETAILS:', error);
-            console.error('Current Auth Store:', api.auth.isAuthenticated(), api.auth.getCurrentUser());
-            console.error('Request URL:', error.url);
-            console.error('Status:', error.status);
-            toast.error(`Error al cargar la receta: ${error.message} (${error.status})`);
-            // navigate('/pacientes'); // Temporarily disable redirect to see error
+            console.error('Error loading recipe:', error);
+            toast.error('Error al cargar la receta');
+            navigate('/pacientes');
         } finally {
             setLoading(false);
         }
