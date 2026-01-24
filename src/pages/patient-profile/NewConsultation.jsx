@@ -235,7 +235,8 @@ export default function NewConsultation() {
                 bmi,
                 // Save clinic and doctor info with consultation
                 clinic: getActiveClinic(),
-                doctor: getActiveDoctor()
+                doctor: getActiveDoctor(),
+                date: new Date().toISOString() // Save current date explicitly
             });
 
             // Mark today's appointment for this patient as completed

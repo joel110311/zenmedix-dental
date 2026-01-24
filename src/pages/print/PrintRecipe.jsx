@@ -363,6 +363,7 @@ export default function PrintRecipe() {
                                 <div className="text-right space-y-0">
                                     <div><span className="text-slate-500">Fecha: </span><span className="font-semibold">
                                         {(() => {
+                                            // Priority: 1. Explicit date field (new), 2. Created date (fallback)
                                             const dateStr = consultation?.date || consultation?.created;
                                             if (!dateStr) return new Date().toLocaleDateString('es-ES');
                                             const d = new Date(dateStr);
