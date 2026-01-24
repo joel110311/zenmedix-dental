@@ -9,22 +9,24 @@ import { Button } from '../ui/Button';
 export const PatientLayout = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { activePatient, setActivePatient } = usePatient();
-    const [loading, setLoading] = useState(!activePatient);
+    const { activePatient, refreshPatient } = usePatient();
+    const [loading, setLoading] = useState(!activePatient || activePatient.id !== id);
 
     useEffect(() => {
+        // If we don't have the patient, or it's a different one, load it
         if (!activePatient || activePatient.id !== id) {
-            loadPatient();
+            loadData();
         } else {
             setLoading(false);
         }
     }, [id]);
 
-    const loadPatient = async () => {
+    const loadData = async () => {
         try {
-            const patient = await api.patients.get(id);
-            setActivePatient(patient);
+            setLoading(true);
+            await refreshPatient(id);
         } catch (error) {
+            console.error("Error loading patient:", error);
             navigate('/pacientes');
         } finally {
             setLoading(false);
