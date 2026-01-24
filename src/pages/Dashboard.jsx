@@ -334,7 +334,15 @@ export default function Dashboard() {
                                         <div key={idx} className="grid grid-cols-[40px_50px_minmax(120px,1fr)_100px_95px_75px] gap-3 py-3 items-center hover:bg-slate-50 dark:hover:bg-[#22262e] transition-colors">
                                             <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{idx + 1}</span>
                                             <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{apt.time || '--:--'}</span>
-                                            <span className="text-sm font-medium text-slate-800 dark:text-white truncate">{apt.patientName || 'Sin nombre'}</span>
+                                            <span className="text-sm font-medium text-slate-800 dark:text-white truncate flex items-center gap-2">
+                                                {apt.patientName || 'Sin nombre'}
+                                                {apt.patient?.balance > 0 && (
+                                                    <span className="w-2 h-2 rounded-full bg-red-500 ring-1 ring-white" title={`Deuda: $${apt.patient.balance}`} />
+                                                )}
+                                                {apt.patient?.balance <= 0 && (
+                                                    <span className="w-2 h-2 rounded-full bg-green-500 ring-1 ring-white" title="Al corriente" />
+                                                )}
+                                            </span>
                                             <span className="text-sm text-slate-600 dark:text-slate-400">{apt.phone || 'N/A'}</span>
                                             {(() => {
                                                 switch (apt.status) {

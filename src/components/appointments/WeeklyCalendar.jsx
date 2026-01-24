@@ -138,17 +138,30 @@ const WeeklyCalendar = ({ appointments, currentDate, onDateChange, clinics = [] 
                                         >
                                             {/* Appointments in this cell */}
                                             <div className="absolute inset-0 p-1 flex flex-col gap-1 overflow-visible z-0 pointer-events-none">
-                                                {cellAppointments.map(appt => (
-                                                    <div
-                                                        key={appt.id}
-                                                        className={`pointer-events-auto p-1 text-xs cursor-pointer z-10 transition-all ${getAppointmentStyle(appt)}`}
-                                                        title={`${appt.time} - ${appt.patientName} (${appt.reason})`}
-                                                    >
-                                                        <div className="font-semibold truncate leading-tight">
-                                                            {appt.time} - {appt.patientName}
+                                                {cellAppointments.map(appt => {
+                                                    const balance = appt.expand?.patient?.balance || 0;
+                                                    const hasDebt = balance > 0;
+                                                    const hasCredit = balance < 0; // Opcional: mostrar saldo a favor
+
+                                                    return (
+                                                        <div
+                                                            key={appt.id}
+                                                            className={`pointer-events-auto p-1 text-xs cursor-pointer z-10 transition-all ${getAppointmentStyle(appt)}`}
+                                                            title={`${appt.time} - ${appt.patientName} (${appt.reason}) - ${hasDebt ? `Deuda: $${balance}` : 'Al corriente'}`}
+                                                        >
+                                                            <div className="flex justify-between items-center gap-1">
+                                                                <div className="font-semibold truncate leading-tight flex-1">
+                                                                    {appt.time} - {appt.patientName}
+                                                                </div>
+                                                                {/* Debt Indicator */}
+                                                                <div className={`
+                                                                    w-2 h-2 rounded-full flex-shrink-0
+                                                                    ${hasDebt ? 'bg-red-500 ring-1 ring-white' : 'bg-green-500 ring-1 ring-white'}
+                                                                `} title={hasDebt ? `Deuda: $${balance}` : 'Sin adeudo'} />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );

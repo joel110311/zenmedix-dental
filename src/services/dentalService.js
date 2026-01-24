@@ -60,5 +60,8 @@ export const dentalService = {
     // Let's use a new collection `surveys` or just `consultations` json field?
     // Let's assume we save it in `consultations` of type "odontogram"? Or just in local state for now/budgets.
 
-    // Let's add a function to save odontogram state to a specific endpoint if we decide where.
+    // Patient Balance Helper
+    updatePatient: async (id, data) => {
+        return await pb.collection('patients').update(id, data);
+    },
 };

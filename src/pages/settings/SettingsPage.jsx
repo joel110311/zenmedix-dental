@@ -647,17 +647,19 @@ export default function SettingsPage() {
                                     onChange={(e) => setNewClinicAddress(e.target.value)}
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                 />
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="10"
-                                        placeholder="Sillones"
-                                        value={newClinicSillones}
-                                        onChange={(e) => setNewClinicSillones(parseInt(e.target.value) || 1)}
-                                        className="w-20 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                        title="Cantidad de sillones a crear automáticamente"
-                                    />
+                                <div className="flex items-center gap-2 md:col-span-2">
+                                    <div className="flex items-center gap-2 border border-slate-300 dark:border-slate-600 rounded-lg px-3 bg-white dark:bg-slate-800">
+                                        <span className="text-sm text-slate-500 whitespace-nowrap">Lugares Disponibles:</span>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            value={newClinicSillones}
+                                            onChange={(e) => setNewClinicSillones(parseInt(e.target.value) || 1)}
+                                            className="w-16 py-2 bg-transparent border-none focus:ring-0 text-slate-900 dark:text-white"
+                                            title="Cantidad de sillones a crear automáticamente"
+                                        />
+                                    </div>
                                     <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 cursor-pointer hover:border-primary transition-colors flex-1">
                                         <Upload className="w-4 h-4 text-slate-400" />
                                         <span className="text-sm text-slate-500">{newClinicLogo ? 'Logo cargado ✓' : 'Subir logo'}</span>
@@ -699,6 +701,16 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <Button variant="ghost" size="sm" onClick={() => {
+                                                setNewClinicName(clinic.name);
+                                                setNewClinicSubtitle(clinic.subtitle || '');
+                                                setNewClinicPhone(clinic.phone || '');
+                                                setNewClinicAddress(clinic.address || '');
+                                                // We don't load logo back into state to avoid overwriting with same base64 unnecessarily unless changed
+                                                toast.info('Datos cargados en el formulario superior para editar. Guarda como nueva o borra la anterior si deseas reemplazarla (Edición directa vendrá en v2).');
+                                            }} className="text-blue-500 hover:text-blue-700" title="Cargar datos para editar">
+                                                <Edit2 className="w-4 h-4" />
+                                            </Button>
                                             {clinic.logo && (
                                                 <Button variant="ghost" size="sm" onClick={() => updateClinic(clinic.id, { logo: '' })} className="text-slate-400 hover:text-red-500" title="Quitar logo">
                                                     <Trash2 className="w-3 h-3" />
@@ -819,398 +831,411 @@ export default function SettingsPage() {
                             </div>
                         </Card>
                     </div>
-                )}
+                )
+                }
 
                 {/* AUTOMATION TAB */}
-                {activeSection === 'automation' && (
-                    <AutomationSection />
-                )}
+                {
+                    activeSection === 'automation' && (
+                        <AutomationSection />
+                    )
+                }
 
                 {/* WEBHOOKS TAB */}
-                {activeSection === 'webhooks' && (
-                    <Card title="Conexiones API (Webhooks)">
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                            Configura las URLs de n8n u otros servicios para sincronizar citas y estadísticas.
-                        </p>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Agendar Cita</label>
-                                <input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="https://n8n.example.com/webhook/schedule"
-                                    value={webhookSchedule}
-                                    onChange={(e) => setWebhookSchedule(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
+                {
+                    activeSection === 'webhooks' && (
+                        <Card title="Conexiones API (Webhooks)">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                Configura las URLs de n8n u otros servicios para sincronizar citas y estadísticas.
+                            </p>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Agendar Cita</label>
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="https://n8n.example.com/webhook/schedule"
+                                        value={webhookSchedule}
+                                        onChange={(e) => setWebhookSchedule(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Eliminar Cita</label>
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="https://n8n.example.com/webhook/delete"
+                                        value={webhookDelete}
+                                        onChange={(e) => setWebhookDelete(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Resumen IA (Dictado)</label>
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="https://n8n.example.com/webhook/ai-summary"
+                                        value={webhookAiSummary}
+                                        onChange={(e) => setWebhookAiSummary(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Para generar resumen de consulta con IA desde el dictado por voz</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Verificar Disponibilidad (Google Calendar)</label>
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="https://n8n.example.com/webhook/check-availability"
+                                        value={webhookAvailability}
+                                        onChange={(e) => setWebhookAvailability(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Consulta Google Calendar para verificar disponibilidad antes de agendar</p>
+                                </div>
+                                <Button onClick={handleSaveWebhooks}><Save className="w-4 h-4 mr-2" /> Guardar Webhooks</Button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Eliminar Cita</label>
-                                <input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="https://n8n.example.com/webhook/delete"
-                                    value={webhookDelete}
-                                    onChange={(e) => setWebhookDelete(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Resumen IA (Dictado)</label>
-                                <input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="https://n8n.example.com/webhook/ai-summary"
-                                    value={webhookAiSummary}
-                                    onChange={(e) => setWebhookAiSummary(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                                <p className="text-xs text-slate-400 mt-1">Para generar resumen de consulta con IA desde el dictado por voz</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook - Verificar Disponibilidad (Google Calendar)</label>
-                                <input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="https://n8n.example.com/webhook/check-availability"
-                                    value={webhookAvailability}
-                                    onChange={(e) => setWebhookAvailability(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                                <p className="text-xs text-slate-400 mt-1">Consulta Google Calendar para verificar disponibilidad antes de agendar</p>
-                            </div>
-                            <Button onClick={handleSaveWebhooks}><Save className="w-4 h-4 mr-2" /> Guardar Webhooks</Button>
-                        </div>
-                    </Card>
-                )}
+                        </Card>
+                    )
+                }
 
                 {/* RECIPE LAYOUT TAB */}
-                {activeSection === 'recipe' && (
-                    <Card title="Diseño de Receta Personalizado">
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                            Personaliza la posición de los elementos en tu receta para que coincidan con tu papel pre-impreso.
-                        </p>
-                        <div className="space-y-4">
-                            <div className="p-4 bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
-                                <h3 className="font-medium text-cyan-800 dark:text-cyan-300 mb-2">¿Cómo funciona?</h3>
-                                <ol className="text-sm text-cyan-700 dark:text-cyan-400 space-y-1 list-decimal list-inside">
-                                    <li>Sube una foto de tu recetario vacío como guía</li>
-                                    <li>Arrastra los elementos (nombre, medicamentos, etc.) sobre la imagen</li>
-                                    <li>Guarda la configuración</li>
-                                    <li>Al imprimir "Sin membrete", el texto caerá en las posiciones que configuraste</li>
-                                </ol>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border">
-                                <div>
-                                    <p className="font-medium text-slate-800 dark:text-white">Estado actual:</p>
-                                    <p className="text-sm text-slate-500">
-                                        {settings.recipeLayout?.enabled ? '✅ Diseño personalizado activo' : '❌ Usando diseño estándar'}
-                                    </p>
+                {
+                    activeSection === 'recipe' && (
+                        <Card title="Diseño de Receta Personalizado">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                Personaliza la posición de los elementos en tu receta para que coincidan con tu papel pre-impreso.
+                            </p>
+                            <div className="space-y-4">
+                                <div className="p-4 bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                                    <h3 className="font-medium text-cyan-800 dark:text-cyan-300 mb-2">¿Cómo funciona?</h3>
+                                    <ol className="text-sm text-cyan-700 dark:text-cyan-400 space-y-1 list-decimal list-inside">
+                                        <li>Sube una foto de tu recetario vacío como guía</li>
+                                        <li>Arrastra los elementos (nombre, medicamentos, etc.) sobre la imagen</li>
+                                        <li>Guarda la configuración</li>
+                                        <li>Al imprimir "Sin membrete", el texto caerá en las posiciones que configuraste</li>
+                                    </ol>
                                 </div>
-                                <Button onClick={() => window.location.href = '/configuracion/receta'}>
-                                    <FileText className="w-4 h-4 mr-2" /> Abrir Editor Visual
-                                </Button>
+                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border">
+                                    <div>
+                                        <p className="font-medium text-slate-800 dark:text-white">Estado actual:</p>
+                                        <p className="text-sm text-slate-500">
+                                            {settings.recipeLayout?.enabled ? '✅ Diseño personalizado activo' : '❌ Usando diseño estándar'}
+                                        </p>
+                                    </div>
+                                    <Button onClick={() => window.location.href = '/configuracion/receta'}>
+                                        <FileText className="w-4 h-4 mr-2" /> Abrir Editor Visual
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    </Card>
-                )}
+                        </Card>
+                    )
+                }
 
                 {/* WHATSAPP AUTOMATION TAB */}
-                {activeSection === 'whatsapp' && (
-                    <Card title="Automatización WhatsApp - YCloud">
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                            Configura el envío automático de recordatorios de citas via WhatsApp usando YCloud API.
-                        </p>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    YCloud API Key *
-                                </label>
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    placeholder="Ingresa tu YCloud API Key"
-                                    value={whatsappApiKey}
-                                    onChange={(e) => setWhatsappApiKey(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                                <p className="text-xs text-slate-400 mt-1">Encuéntrala en tu panel de YCloud → Settings → API Keys</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    Número Remitente WhatsApp *
-                                </label>
-                                <input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="+524771075025"
-                                    value={whatsappSenderNumber}
-                                    onChange={(e) => setWhatsappSenderNumber(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                                <p className="text-xs text-slate-400 mt-1">Número verificado en YCloud desde el cual se envían los mensajes (incluye código de país)</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    Nombre de Plantilla
-                                </label>
-                                <input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="recordatorio_cita_1_dia"
-                                    value={whatsappTemplateName}
-                                    onChange={(e) => setWhatsappTemplateName(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                                <p className="text-xs text-slate-400 mt-1">Nombre de la plantilla aprobada en WhatsApp Business (debe tener parámetros: nombre y hora)</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    Hora de Envío de Recordatorios
-                                </label>
-                                <select
-                                    value={whatsappReminderHour}
-                                    onChange={(e) => setWhatsappReminderHour(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                >
-                                    <option value="disabled">Desactivado</option>
-                                    <option value="7">7:00 AM</option>
-                                    <option value="8">8:00 AM</option>
-                                    <option value="9">9:00 AM</option>
-                                    <option value="10">10:00 AM</option>
-                                    <option value="11">11:00 AM</option>
-                                </select>
-                                <p className="text-xs text-slate-400 mt-1">El recordatorio se enviará a esta hora para todas las citas del día</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    Zona Horaria
-                                </label>
-                                <select
-                                    value={whatsappTimezone}
-                                    onChange={(e) => setWhatsappTimezone(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                >
-                                    <option value="America/Mexico_City">México (Ciudad de México)</option>
-                                    <option value="America/Monterrey">México (Monterrey)</option>
-                                    <option value="America/Tijuana">México (Tijuana)</option>
-                                    <option value="America/Bogota">Colombia (Bogotá)</option>
-                                    <option value="America/Argentina/Buenos_Aires">Argentina (Buenos Aires)</option>
-                                    <option value="America/Lima">Perú (Lima)</option>
-                                    <option value="America/Santiago">Chile (Santiago)</option>
-                                    <option value="Europe/Madrid">España (Madrid)</option>
-                                </select>
-                                <p className="text-xs text-slate-400 mt-1">Zona horaria para los recordatorios automáticos</p>
-                            </div>
+                {
+                    activeSection === 'whatsapp' && (
+                        <Card title="Automatización WhatsApp - YCloud">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                Configura el envío automático de recordatorios de citas via WhatsApp usando YCloud API.
+                            </p>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        YCloud API Key *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        autoComplete="off"
+                                        placeholder="Ingresa tu YCloud API Key"
+                                        value={whatsappApiKey}
+                                        onChange={(e) => setWhatsappApiKey(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Encuéntrala en tu panel de YCloud → Settings → API Keys</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Número Remitente WhatsApp *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="+524771075025"
+                                        value={whatsappSenderNumber}
+                                        onChange={(e) => setWhatsappSenderNumber(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Número verificado en YCloud desde el cual se envían los mensajes (incluye código de país)</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Nombre de Plantilla
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="recordatorio_cita_1_dia"
+                                        value={whatsappTemplateName}
+                                        onChange={(e) => setWhatsappTemplateName(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Nombre de la plantilla aprobada en WhatsApp Business (debe tener parámetros: nombre y hora)</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Hora de Envío de Recordatorios
+                                    </label>
+                                    <select
+                                        value={whatsappReminderHour}
+                                        onChange={(e) => setWhatsappReminderHour(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    >
+                                        <option value="disabled">Desactivado</option>
+                                        <option value="7">7:00 AM</option>
+                                        <option value="8">8:00 AM</option>
+                                        <option value="9">9:00 AM</option>
+                                        <option value="10">10:00 AM</option>
+                                        <option value="11">11:00 AM</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">El recordatorio se enviará a esta hora para todas las citas del día</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Zona Horaria
+                                    </label>
+                                    <select
+                                        value={whatsappTimezone}
+                                        onChange={(e) => setWhatsappTimezone(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    >
+                                        <option value="America/Mexico_City">México (Ciudad de México)</option>
+                                        <option value="America/Monterrey">México (Monterrey)</option>
+                                        <option value="America/Tijuana">México (Tijuana)</option>
+                                        <option value="America/Bogota">Colombia (Bogotá)</option>
+                                        <option value="America/Argentina/Buenos_Aires">Argentina (Buenos Aires)</option>
+                                        <option value="America/Lima">Perú (Lima)</option>
+                                        <option value="America/Santiago">Chile (Santiago)</option>
+                                        <option value="Europe/Madrid">España (Madrid)</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">Zona horaria para los recordatorios automáticos</p>
+                                </div>
 
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">📡 Webhook para Confirmaciones</h4>
-                                <p className="text-xs text-blue-600 dark:text-blue-400">
-                                    Configura esta URL en tu panel de YCloud para recibir respuestas de los pacientes:
-                                </p>
-                                <code className="block mt-2 p-2 bg-blue-100 dark:bg-blue-900/40 rounded text-xs text-blue-800 dark:text-blue-200 break-all">
-                                    https://[tu-dominio]/api/webhooks/whatsapp-inbound
-                                </code>
-                            </div>
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">📡 Webhook para Confirmaciones</h4>
+                                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                                        Configura esta URL en tu panel de YCloud para recibir respuestas de los pacientes:
+                                    </p>
+                                    <code className="block mt-2 p-2 bg-blue-100 dark:bg-blue-900/40 rounded text-xs text-blue-800 dark:text-blue-200 break-all">
+                                        https://[tu-dominio]/api/webhooks/whatsapp-inbound
+                                    </code>
+                                </div>
 
-                            <Button onClick={handleSaveWhatsApp}>
-                                <Save className="w-4 h-4 mr-2" /> Guardar Configuración WhatsApp
-                            </Button>
-                        </div>
-                    </Card>
-                )}
+                                <Button onClick={handleSaveWhatsApp}>
+                                    <Save className="w-4 h-4 mr-2" /> Guardar Configuración WhatsApp
+                                </Button>
+                            </div>
+                        </Card>
+                    )
+                }
 
 
 
 
                 {/* TREATMENTS TAB */}
-                {activeSection === 'treatments' && (
-                    <Card title="Lista de Precios y Tratamientos">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg items-end">
-                            <div className="md:col-span-2">
-                                <label className="text-xs text-slate-500 mb-1 block">Nombre del Tratamiento</label>
-                                <input
-                                    type="text"
-                                    placeholder="ej. Limpieza Dental"
-                                    value={newTreatmentName}
-                                    onChange={(e) => setNewTreatmentName(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
+                {
+                    activeSection === 'treatments' && (
+                        <Card title="Lista de Precios y Tratamientos">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg items-end">
+                                <div className="md:col-span-2">
+                                    <label className="text-xs text-slate-500 mb-1 block">Nombre del Tratamiento</label>
+                                    <input
+                                        type="text"
+                                        placeholder="ej. Limpieza Dental"
+                                        value={newTreatmentName}
+                                        onChange={(e) => setNewTreatmentName(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-500 mb-1 block">Precio</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={newTreatmentPrice}
+                                        onChange={(e) => setNewTreatmentPrice(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-500 mb-1 block">Categoría</label>
+                                    <select
+                                        value={newTreatmentCategory}
+                                        onChange={(e) => setNewTreatmentCategory(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    >
+                                        <option>Preventiva</option>
+                                        <option>Restauradora</option>
+                                        <option>Endodoncia</option>
+                                        <option>Cirugía</option>
+                                        <option>Ortodoncia</option>
+                                        <option>Estética</option>
+                                        <option>Otros</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-4 flex justify-end mt-2">
+                                    <Button onClick={handleAddTreatment}><Plus className="w-4 h-4 mr-1" /> Agregar Tratamiento</Button>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-xs text-slate-500 mb-1 block">Precio</label>
-                                <input
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={newTreatmentPrice}
-                                    onChange={(e) => setNewTreatmentPrice(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 mb-1 block">Categoría</label>
-                                <select
-                                    value={newTreatmentCategory}
-                                    onChange={(e) => setNewTreatmentCategory(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                >
-                                    <option>Preventiva</option>
-                                    <option>Restauradora</option>
-                                    <option>Endodoncia</option>
-                                    <option>Cirugía</option>
-                                    <option>Ortodoncia</option>
-                                    <option>Estética</option>
-                                    <option>Otros</option>
-                                </select>
-                            </div>
-                            <div className="md:col-span-4 flex justify-end mt-2">
-                                <Button onClick={handleAddTreatment}><Plus className="w-4 h-4 mr-1" /> Agregar Tratamiento</Button>
-                            </div>
-                        </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500">
-                                    <tr>
-                                        <th className="px-4 py-3 rounded-tl-lg">Nombre</th>
-                                        <th className="px-4 py-3">Categoría</th>
-                                        <th className="px-4 py-3">Precio</th>
-                                        <th className="px-4 py-3 rounded-tr-lg text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {treatments.map(t => (
-                                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                            <td className="px-4 py-3 font-medium text-slate-800 dark:text-white">{t.name}</td>
-                                            <td className="px-4 py-3 text-slate-500">{t.category}</td>
-                                            <td className="px-4 py-3 text-green-600 font-medium">${t.price}</td>
-                                            <td className="px-4 py-3 text-right">
-                                                <Button variant="ghost" size="sm" onClick={() => handleDeleteTreatment(t.id)} className="text-red-500">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {treatments.length === 0 && (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500">
                                         <tr>
-                                            <td colSpan="4" className="text-center py-8 text-slate-400">No hay tratamientos registrados</td>
+                                            <th className="px-4 py-3 rounded-tl-lg">Nombre</th>
+                                            <th className="px-4 py-3">Categoría</th>
+                                            <th className="px-4 py-3">Precio</th>
+                                            <th className="px-4 py-3 rounded-tr-lg text-right">Acciones</th>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
-                )}
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                        {treatments.map(t => (
+                                            <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                <td className="px-4 py-3 font-medium text-slate-800 dark:text-white">{t.name}</td>
+                                                <td className="px-4 py-3 text-slate-500">{t.category}</td>
+                                                <td className="px-4 py-3 text-green-600 font-medium">${t.price}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteTreatment(t.id)} className="text-red-500">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {treatments.length === 0 && (
+                                            <tr>
+                                                <td colSpan="4" className="text-center py-8 text-slate-400">No hay tratamientos registrados</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Card>
+                    )
+                }
 
                 {/* BACKUP TAB - NOM-024 */}
-                {activeSection === 'backup' && (
-                    <Card title="Respaldo de Datos - NOM-024-SSA3-2012">
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                            Cumplimiento de respaldo de expedientes clínicos electrónicos.
-                        </p>
+                {
+                    activeSection === 'backup' && (
+                        <Card title="Respaldo de Datos - NOM-024-SSA3-2012">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                Cumplimiento de respaldo de expedientes clínicos electrónicos.
+                            </p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Export */}
-                            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
-                                        <Download className="w-5 h-5 text-green-600" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Export */}
+                                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
+                                            <Download className="w-5 h-5 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-green-800 dark:text-green-300">Exportar Respaldo</h3>
+                                            <p className="text-xs text-green-600 dark:text-green-400">Descargar todos los datos</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-green-800 dark:text-green-300">Exportar Respaldo</h3>
-                                        <p className="text-xs text-green-600 dark:text-green-400">Descargar todos los datos</p>
-                                    </div>
-                                </div>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                                    Genera un archivo JSON con todos los pacientes, consultas, análisis y configuración.
-                                </p>
-                                <Button
-                                    onClick={() => {
-                                        const result = exportBackup();
-                                        if (result.success) {
-                                            toast.success(`Respaldo exportado (${result.keysExported} registros)`);
-                                        } else {
-                                            toast.error('Error al exportar');
-                                        }
-                                    }}
-                                    className="w-full"
-                                >
-                                    <Download className="w-4 h-4 mr-2" /> Descargar Respaldo
-                                </Button>
-                            </div>
-
-                            {/* Import */}
-                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-                                        <Upload className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-blue-800 dark:text-blue-300">Restaurar Respaldo</h3>
-                                        <p className="text-xs text-blue-600 dark:text-blue-400">Importar desde archivo</p>
-                                    </div>
-                                </div>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                                    Restaura datos desde un archivo de respaldo previo.
-                                </p>
-                                <input
-                                    type="file"
-                                    accept=".json"
-                                    onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            const result = await importBackup(file, false);
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                        Genera un archivo JSON con todos los pacientes, consultas, análisis y configuración.
+                                    </p>
+                                    <Button
+                                        onClick={() => {
+                                            const result = exportBackup();
                                             if (result.success) {
-                                                toast.success(`Importados ${result.keysImported} registros`);
+                                                toast.success(`Respaldo exportado (${result.keysExported} registros)`);
                                             } else {
-                                                toast.error(result.error || 'Error al importar');
+                                                toast.error('Error al exportar');
                                             }
-                                        }
-                                        e.target.value = '';
-                                    }}
-                                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300"
-                                />
-                            </div>
-                        </div>
+                                        }}
+                                        className="w-full"
+                                    >
+                                        <Download className="w-4 h-4 mr-2" /> Descargar Respaldo
+                                    </Button>
+                                </div>
 
-                        {/* Storage Info */}
-                        <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Database className="w-4 h-4 text-slate-500" />
-                                <span className="font-medium text-slate-700 dark:text-slate-300">Uso de Almacenamiento</span>
-                            </div>
-                            {(() => {
-                                const stats = getStorageStats();
-                                const backupInfo = getBackupInfo();
-                                return (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                        <div>
-                                            <p className="text-2xl font-bold text-primary">{stats.totalKeys}</p>
-                                            <p className="text-xs text-slate-500">Registros</p>
+                                {/* Import */}
+                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
+                                            <Upload className="w-5 h-5 text-blue-600" />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">{stats.totalMB} MB</p>
-                                            <p className="text-xs text-slate-500">Tamaño</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-2xl font-bold text-amber-600">{stats.usagePercent}%</p>
-                                            <p className="text-xs text-slate-500">Capacidad</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                {backupInfo?.lastBackup
-                                                    ? new Date(backupInfo.lastBackup).toLocaleDateString('es-MX')
-                                                    : 'Nunca'}
-                                            </p>
-                                            <p className="text-xs text-slate-500">Último respaldo</p>
+                                            <h3 className="font-semibold text-blue-800 dark:text-blue-300">Restaurar Respaldo</h3>
+                                            <p className="text-xs text-blue-600 dark:text-blue-400">Importar desde archivo</p>
                                         </div>
                                     </div>
-                                );
-                            })()}
-                        </div>
-                    </Card>
-                )}
-            </div>
-        </div>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                        Restaura datos desde un archivo de respaldo previo.
+                                    </p>
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const result = await importBackup(file, false);
+                                                if (result.success) {
+                                                    toast.success(`Importados ${result.keysImported} registros`);
+                                                } else {
+                                                    toast.error(result.error || 'Error al importar');
+                                                }
+                                            }
+                                            e.target.value = '';
+                                        }}
+                                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Storage Info */}
+                            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Database className="w-4 h-4 text-slate-500" />
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">Uso de Almacenamiento</span>
+                                </div>
+                                {(() => {
+                                    const stats = getStorageStats();
+                                    const backupInfo = getBackupInfo();
+                                    return (
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                            <div>
+                                                <p className="text-2xl font-bold text-primary">{stats.totalKeys}</p>
+                                                <p className="text-xs text-slate-500">Registros</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">{stats.totalMB} MB</p>
+                                                <p className="text-xs text-slate-500">Tamaño</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-2xl font-bold text-amber-600">{stats.usagePercent}%</p>
+                                                <p className="text-xs text-slate-500">Capacidad</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                    {backupInfo?.lastBackup
+                                                        ? new Date(backupInfo.lastBackup).toLocaleDateString('es-MX')
+                                                        : 'Nunca'}
+                                                </p>
+                                                <p className="text-xs text-slate-500">Último respaldo</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </Card>
+                    )
+                }
+            </div >
+        </div >
     );
 }

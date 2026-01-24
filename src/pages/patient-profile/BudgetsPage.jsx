@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { usePatient } from '../../context/PatientContext';
 import { Plus, Check, X, Printer, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +10,7 @@ import { Spinner } from '../../components/ui/Spinner';
 
 export default function BudgetsPage() {
     const { id: patientId } = useParams();
+    const { activePatient, refreshPatient } = usePatient();
     const [budgets, setBudgets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
@@ -92,10 +94,33 @@ export default function BudgetsPage() {
 
     const handleStatusChange = async (budget, newStatus) => {
         try {
+            // Update budget status
             await dentalService.updateBudget(budget.id, { status: newStatus });
-            toast.success('Estado actualizado');
+
+            // Handle Balance Updates
+            let balanceChange = 0;
+            const currentBalance = activePatient.balance || 0;
+
+            // If accepting a budget, increase debt
+            if (newStatus === 'accepted' && budget.status === 'pending') {
+                balanceChange = budget.total;
+            }
+            // If rejecting an accepted budget (undo), decrease debt
+            else if (newStatus === 'rejected' && budget.status === 'accepted') {
+                balanceChange = -budget.total;
+            }
+
+            if (balanceChange !== 0) {
+                await dentalService.updatePatient(patientId, {
+                    balance: currentBalance + balanceChange
+                });
+                refreshPatient(); // Refresh global patient state
+            }
+
+            toast.success('Estado actualizado y saldo ajustado');
             loadBudgets();
         } catch (error) {
+            console.error(error);
             toast.error('Error al actualizar');
         }
     };
@@ -112,9 +137,11 @@ export default function BudgetsPage() {
             return;
         }
 
+        const amount = parseFloat(paymentAmount);
+
         try {
             const newPayment = {
-                amount: parseFloat(paymentAmount),
+                amount: amount,
                 date: new Date().toISOString(),
                 method: paymentMethod
             };
@@ -130,10 +157,18 @@ export default function BudgetsPage() {
                 status: selectedBudget.status === 'paid' ? 'paid' : newStatus
             });
 
-            toast.success('Pago registrado');
+            // Decrease Patient Balance (Debt)
+            const currentBalance = activePatient.balance || 0;
+            await dentalService.updatePatient(patientId, {
+                balance: currentBalance - amount
+            });
+            refreshPatient();
+
+            toast.success('Pago registrado y deuda actualizada');
             setShowPaymentModal(false);
             loadBudgets();
         } catch (error) {
+            console.error(error);
             toast.error('Error al registrar pago');
         }
     };
@@ -230,8 +265,8 @@ export default function BudgetsPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Presupuestos</h1>
-                    <p className="text-slate-500">Administra cotizaciones y pagos</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Presupuestos y Pagos</h1>
+                    <p className="text-slate-500">Administra cotizaciones y estado de cuenta</p>
                 </div>
                 {!showCreate && (
                     <Button onClick={handleCreateClick}>
@@ -239,6 +274,41 @@ export default function BudgetsPage() {
                     </Button>
                 )}
             </div>
+
+            {/* Account Summary Card */}
+            {activePatient && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-white dark:bg-slate-800">
+                        <div className="text-slate-500 text-sm font-medium">Saldo Pendiente (Deuda)</div>
+                        <div className={`text-2xl font-bold ${activePatient.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            ${(activePatient.balance || 0).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                            {activePatient.balance > 0 ? 'Requiere pago' : 'Al corriente'}
+                        </div>
+                    </Card>
+
+                    <Card className="bg-white dark:bg-slate-800">
+                        <div className="text-slate-500 text-sm font-medium">Total Presupuestado</div>
+                        <div className="text-2xl font-bold text-slate-800 dark:text-white">
+                            ${budgets.reduce((sum, b) => sum + (b.total || 0), 0).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                            {budgets.length} presupuestos generados
+                        </div>
+                    </Card>
+
+                    <Card className="bg-white dark:bg-slate-800">
+                        <div className="text-slate-500 text-sm font-medium">Estado General</div>
+                        <div className="flex items-center gap-2 mt-1">
+                            {activePatient.balance > 0
+                                ? <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">Con Adeudo</span>
+                                : <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">Sin Adeudo</span>
+                            }
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {showCreate ? (
                 <Card>
