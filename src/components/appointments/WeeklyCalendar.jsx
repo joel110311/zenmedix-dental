@@ -1,7 +1,27 @@
 import React, { useMemo } from 'react'; // Added React import
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const WeeklyCalendar = ({ appointments, currentDate, onDateChange }) => {
+const WeeklyCalendar = ({ appointments, currentDate, onDateChange, clinics = [] }) => {
+    // Clinic Colors Map (Stable by index)
+    const CLINIC_COLORS = ['bg-lime-200 border-lime-500 text-lime-800', 'bg-blue-200 border-blue-500 text-blue-800', 'bg-purple-200 border-purple-500 text-purple-800', 'bg-orange-200 border-orange-500 text-orange-800'];
+
+    const getAppointmentStyle = (appt) => {
+        // Find clinic index
+        if (!clinics || clinics.length === 0) return 'bg-blue-100 border-blue-500 text-blue-900';
+
+        const clinicId = appt.clinicId || (appt.clinic && appt.clinic.id);
+        const index = clinics.findIndex(c => c.id === clinicId);
+
+        if (index >= 0) {
+            // Use safe modulus to cycle colors
+            const colorClass = CLINIC_COLORS[index % CLINIC_COLORS.length];
+            // Reconstruct the full class string for compatibility with existing render
+            // Replaces "bg-blue-100 ... text-blue-900" with our color classes
+            return `${colorClass.replace('bg-', 'bg-').replace('border-', 'border-l-2 border-')} rounded-sm shadow-sm hover:brightness-95`;
+        }
+        return 'bg-blue-100 border-l-2 border-blue-500 text-blue-900';
+    };
+
     // Get Monday of the current week
     const weekStart = useMemo(() => {
         const d = new Date(currentDate);
@@ -121,10 +141,10 @@ const WeeklyCalendar = ({ appointments, currentDate, onDateChange }) => {
                                                 {cellAppointments.map(appt => (
                                                     <div
                                                         key={appt.id}
-                                                        className="pointer-events-auto bg-blue-100 dark:bg-blue-900/60 border-l-2 border-blue-500 dark:border-blue-400 p-1 rounded-sm text-xs shadow-sm cursor-pointer hover:brightness-95 transition-all z-10"
+                                                        className={`pointer-events-auto p-1 text-xs cursor-pointer z-10 transition-all ${getAppointmentStyle(appt)}`}
                                                         title={`${appt.time} - ${appt.patientName} (${appt.reason})`}
                                                     >
-                                                        <div className="font-semibold text-blue-900 dark:text-blue-100 truncate leading-tight">
+                                                        <div className="font-semibold truncate leading-tight">
                                                             {appt.time} - {appt.patientName}
                                                         </div>
                                                     </div>

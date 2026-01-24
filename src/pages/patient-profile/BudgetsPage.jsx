@@ -138,6 +138,81 @@ export default function BudgetsPage() {
         }
     };
 
+    const handlePrint = (budget) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast.error('Permite las ventanas emergentes para imprimir');
+            return;
+        }
+
+        const patientName = budget.patient?.firstName ? `${budget.patient.firstName} ${budget.patient.lastName}` : 'Paciente';
+        const date = new Date(budget.created).toLocaleDateString();
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Presupuesto #${budget.id.slice(-4)}</title>
+                <style>
+                    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.5; color: #333; max-width: 800px; mx: auto; padding: 20px; }
+                    .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+                    .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+                    .info { text-align: right; font-size: 14px; }
+                    .title { text-align: center; margin: 40px 0; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                    th { text-align: left; border-bottom: 2px solid #eee; padding: 10px; font-weight: 600; }
+                    td { padding: 10px; border-bottom: 1px solid #f5f5f5; }
+                    .total { text-align: right; font-size: 20px; font-weight: bold; margin-top: 20px; }
+                    .footer { margin-top: 60px; font-size: 12px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+                    @media print { body { padding: 0; } .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="logo">ZenMedix Dental</div>
+                    <div class="info">
+                        <p><strong>Fecha:</strong> ${date}</p>
+                        <p><strong>Presupuesto:</strong> #${budget.id.slice(-4)}</p>
+                        <p><strong>Paciente:</strong> ${patientName}</p>
+                    </div>
+                </div>
+
+                <h1 class="title">Presupuesto Dental</h1>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tratamiento</th>
+                            <th style="text-align: right">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${budget.items?.map(item => `
+                            <tr>
+                                <td>${item.name}</td>
+                                <td style="text-align: right">$${item.price}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="total">
+                    Total: $${budget.total}
+                </div>
+
+                <div class="footer">
+                    <p>Este presupuesto tiene una validez de 15 días.</p>
+                </div>
+                <script>
+                    window.onload = () => { window.print(); }
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+    };
     const renderStatus = (status) => {
         switch (status) {
             case 'pending': return <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">Pendiente</span>;
@@ -262,7 +337,7 @@ export default function BudgetsPage() {
                                                     <DollarSign className="w-4 h-4 mr-1" /> Registrar Pago
                                                 </Button>
                                             )}
-                                            <Button size="sm" variant="ghost">
+                                            <Button size="sm" variant="ghost" onClick={() => handlePrint(budget)}>
                                                 <Printer className="w-4 h-4" />
                                             </Button>
                                         </div>

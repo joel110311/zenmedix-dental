@@ -243,11 +243,13 @@ export default function SettingsPage() {
     const [newDoctorUniversity, setNewDoctorUniversity] = useState('');
     const [newDoctorSsg, setNewDoctorSsg] = useState('');
 
+
     const [newClinicName, setNewClinicName] = useState('');
     const [newClinicSubtitle, setNewClinicSubtitle] = useState('');
     const [newClinicPhone, setNewClinicPhone] = useState('');
     const [newClinicAddress, setNewClinicAddress] = useState('');
     const [newClinicLogo, setNewClinicLogo] = useState('');
+    const [newClinicSillones, setNewClinicSillones] = useState(1); // Default 1 sillón
 
     const [webhookSchedule, setWebhookSchedule] = useState(settings.webhooks?.schedule || '');
     const [webhookDelete, setWebhookDelete] = useState(settings.webhooks?.delete || '');
@@ -270,7 +272,7 @@ export default function SettingsPage() {
     const [newTreatmentCategory, setNewTreatmentCategory] = useState('Preventiva');
 
     useEffect(() => {
-        if (activeSection === 'resources') loadResources();
+        if (activeSection === 'clinic') loadResources(); // Load resources when in clinic tab
         if (activeSection === 'treatments') loadTreatments();
     }, [activeSection]);
 
@@ -344,6 +346,18 @@ export default function SettingsPage() {
         }
     };
 
+    // Helper to create initial resources for new clinic
+    const createInitialResources = async (clinicName, quantity) => {
+        const promises = [];
+        for (let i = 1; i <= quantity; i++) {
+            promises.push(dentalService.createResource({
+                name: `Sillón ${i} - ${clinicName}`,
+                active: true
+            }));
+        }
+        await Promise.allSettled(promises);
+    };
+
     const handleThemeChange = (themeId) => {
         setCurrentTheme(themeId);
         saveConfigTheme(themeId);
@@ -381,11 +395,24 @@ export default function SettingsPage() {
                 address: newClinicAddress,
                 logo: newClinicLogo
             });
+
+            // Auto-create resources if requested
+            if (newClinicSillones > 0) {
+                try {
+                    await createInitialResources(newClinicName, newClinicSillones);
+                    toast.success(`${newClinicSillones} consultorios creados automáticamente`);
+                    loadResources(); // Refresh resources list
+                } catch (e) {
+                    console.error("Error auto-creating resources", e);
+                }
+            }
+
             setNewClinicName('');
             setNewClinicSubtitle('');
             setNewClinicPhone('');
             setNewClinicAddress('');
             setNewClinicLogo('');
+            setNewClinicSillones(1);
             toast.success('Clínica agregada');
         }
     };
@@ -438,8 +465,7 @@ export default function SettingsPage() {
     const allSections = [
         { id: 'design', label: 'Diseño', icon: Palette, description: 'Tema y visualización', color: 'from-violet-500 to-purple-500', superAdminOnly: false },
         { id: 'users', label: 'Usuarios y Roles', icon: Users, description: 'Gestionar usuarios', color: 'from-emerald-500 to-teal-500', superAdminOnly: false },
-        { id: 'clinic', label: 'Clínica', icon: Building2, description: 'Clinicas y doctores', color: 'from-blue-500 to-indigo-500', superAdminOnly: false },
-        { id: 'resources', label: 'Consultorios', icon: Hospital, description: 'Sillones y boxes', color: 'from-pink-500 to-rose-500', superAdminOnly: false },
+        { id: 'clinic', label: 'Clínica & Consultorios', icon: Building2, description: 'Clínicas, doctores y sillones', color: 'from-blue-500 to-indigo-500', superAdminOnly: false },
         { id: 'treatments', label: 'Lista de Precios', icon: Database, description: 'Tratamientos y costos', color: 'from-amber-500 to-orange-500', superAdminOnly: false },
         { id: 'automation', label: 'Automatización', icon: Settings, description: 'Bot y horarios n8n', color: 'from-cyan-500 to-blue-500', superAdminOnly: true },
         { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, description: 'Automatización YCloud', color: 'from-green-500 to-emerald-500', superAdminOnly: true },
@@ -622,16 +648,26 @@ export default function SettingsPage() {
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                 />
                                 <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        placeholder="Sillones"
+                                        value={newClinicSillones}
+                                        onChange={(e) => setNewClinicSillones(parseInt(e.target.value) || 1)}
+                                        className="w-20 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                        title="Cantidad de sillones a crear automáticamente"
+                                    />
                                     <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 cursor-pointer hover:border-primary transition-colors flex-1">
                                         <Upload className="w-4 h-4 text-slate-400" />
-                                        <span className="text-sm text-slate-500">{newClinicLogo ? 'Logo cargado ✓' : 'Subir logo (opcional)'}</span>
+                                        <span className="text-sm text-slate-500">{newClinicLogo ? 'Logo cargado ✓' : 'Subir logo'}</span>
                                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e)} />
                                     </label>
                                     {newClinicLogo && (
                                         <img src={newClinicLogo} alt="Preview" className="w-10 h-10 object-contain rounded border" />
                                     )}
                                 </div>
-                                <div className="flex justify-end">
+                                <div className="flex justify-end p-1">
                                     <Button onClick={handleAddClinic}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
                                 </div>
                             </div>
@@ -752,6 +788,34 @@ export default function SettingsPage() {
                                         )}
                                     </div>
                                 ))}
+                            </div>
+                        </Card>
+
+                        {/* Resources Section (Moved here) */}
+                        <Card title="Consultorios / Sillones">
+                            <div className="flex gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                                <input
+                                    type="text"
+                                    placeholder="Nombre (ej. Sillón 1, Rayos X)"
+                                    value={newResourceName}
+                                    onChange={(e) => setNewResourceName(e.target.value)}
+                                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                />
+                                <Button onClick={handleAddResource}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
+                            </div>
+                            <div className="space-y-2">
+                                {resources.map(r => (
+                                    <div key={r.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-slate-700">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-3 h-3 rounded-full ${r.active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                                            <span className="font-medium text-slate-800 dark:text-white">{r.name}</span>
+                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteResource(r.id)} className="text-red-500">
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {resources.length === 0 && <p className="text-center text-slate-500 py-4">No hay consultorios registrados</p>}
                             </div>
                         </Card>
                     </div>
@@ -956,32 +1020,8 @@ export default function SettingsPage() {
                     </Card>
                 )}
 
-                {/* RESOURCES TAB */}
-                {activeSection === 'resources' && (
-                    <Card title="Consultorios / Sillones">
-                        <div className="flex gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                            <input
-                                type="text"
-                                placeholder="Nombre (ej. Sillón 1, Rayos X)"
-                                value={newResourceName}
-                                onChange={(e) => setNewResourceName(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                            />
-                            <Button onClick={handleAddResource}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
-                        </div>
-                        <div className="space-y-2">
-                            {resources.map(r => (
-                                <div key={r.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-slate-700">
-                                    <span className="font-medium text-slate-800 dark:text-white">{r.name}</span>
-                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteResource(r.id)} className="text-red-500">
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                            {resources.length === 0 && <p className="text-center text-slate-500 py-4">No hay consultorios registrados</p>}
-                        </div>
-                    </Card>
-                )}
+
+
 
                 {/* TREATMENTS TAB */}
                 {activeSection === 'treatments' && (

@@ -107,14 +107,41 @@ export default function AppointmentsPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [appts, pts, res] = await Promise.all([
-                api.appointments.list(),
-                api.patients.list(),
-                dentalService.getResources()
-            ]);
-            setAppointments(appts);
-            setPatients(pts);
-            setResources(res && res.length > 0 ? res : RESOURCES_FALLBACK);
+            try {
+                // Fetch independently to handle individual failures (e.g. 403 on resources)
+                const [apptsResult, ptsResult, resResult] = await Promise.allSettled([
+                    api.appointments.list(),
+                    api.patients.list(),
+                    dentalService.getResources()
+                ]);
+
+                // Handle Appointments
+                if (apptsResult.status === 'fulfilled') {
+                    setAppointments(apptsResult.value);
+                } else {
+                    console.error('Error fetching appointments:', apptsResult.reason);
+                    toast.error('Error al cargar citas');
+                }
+
+                // Handle Patients
+                if (ptsResult.status === 'fulfilled') {
+                    setPatients(ptsResult.value);
+                } else {
+                    console.error('Error fetching patients:', ptsResult.reason);
+                    toast.error('Error al cargar pacientes');
+                }
+
+                // Handle Resources (Fall back if fails, e.g. 403)
+                if (resResult.status === 'fulfilled' && resResult.value && resResult.value.length > 0) {
+                    setResources(resResult.value);
+                } else {
+                    console.warn('Using fallback resources due to fetch error:', resResult.reason);
+                    setResources(RESOURCES_FALLBACK);
+                }
+
+            } catch (error) {
+                console.error('Critical load error:', error);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -341,6 +368,7 @@ export default function AppointmentsPage() {
                             appointments={displayedAppointments}
                             currentDate={selectedDate}
                             onDateChange={setSelectedDate}
+                            clinics={settings.clinics}
                         />
                     </div>
                     <div className="w-full xl:w-80 space-y-6">
@@ -433,7 +461,7 @@ export default function AppointmentsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Apellido *</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Apellido(s) *</label>
                                     <input
                                         type="text"
                                         value={newPatient.lastName}
