@@ -152,7 +152,16 @@ export default function NewConsultation() {
         }
     });
 
-    // ... rest of hook initialization ...
+    const { fields, append, remove } = useFieldArray({ control, name: 'medications' });
+
+    const watchWeight = watch('vitalSigns.weight');
+    const watchHeight = watch('vitalSigns.height');
+    const bmi = calculateBMI(watchWeight, watchHeight);
+
+    // Calculate age safely
+    const patientAge = activePatient ? calculateAge(activePatient.dob) : null;
+
+    if (!activePatient) return null;
 
     const onSubmit = async (data) => {
         setSaving(true);
