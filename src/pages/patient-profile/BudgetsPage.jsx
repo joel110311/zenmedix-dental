@@ -10,7 +10,7 @@ import { Spinner } from '../../components/ui/Spinner';
 
 export default function BudgetsPage() {
     const { id: patientId } = useParams();
-    const { activePatient, refreshPatient } = usePatient();
+    const { activePatient, setActivePatient } = usePatient();
     const [budgets, setBudgets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
@@ -111,10 +111,10 @@ export default function BudgetsPage() {
             }
 
             if (balanceChange !== 0) {
-                await dentalService.updatePatient(patientId, {
+                const updatedPatient = await dentalService.updatePatient(patientId, {
                     balance: currentBalance + balanceChange
                 });
-                refreshPatient(); // Refresh global patient state
+                setActivePatient(prev => ({ ...prev, ...updatedPatient }));
             }
 
             toast.success('Estado actualizado y saldo ajustado');
@@ -159,10 +159,10 @@ export default function BudgetsPage() {
 
             // Decrease Patient Balance (Debt)
             const currentBalance = activePatient.balance || 0;
-            await dentalService.updatePatient(patientId, {
+            const updatedPatient = await dentalService.updatePatient(patientId, {
                 balance: currentBalance - amount
             });
-            refreshPatient();
+            setActivePatient(prev => ({ ...prev, ...updatedPatient }));
 
             toast.success('Pago registrado y deuda actualizada');
             setShowPaymentModal(false);
