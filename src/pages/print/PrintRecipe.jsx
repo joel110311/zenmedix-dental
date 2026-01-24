@@ -169,7 +169,12 @@ export default function PrintRecipe() {
                                     fontSize: `${settings.recipeLayout.elements.date.fontSize || 11}pt`,
                                     fontWeight: settings.recipeLayout.elements.date.bold ? 'bold' : 'normal'
                                 }}>
-                                    {new Date(consultation?.date).toLocaleDateString('es-ES')}
+                                    {(() => {
+                                        const dateStr = consultation?.date || consultation?.created;
+                                        if (!dateStr) return new Date().toLocaleDateString('es-ES');
+                                        const d = new Date(dateStr);
+                                        return isNaN(d.getTime()) ? new Date().toLocaleDateString('es-ES') : d.toLocaleDateString('es-ES');
+                                    })()}
                                 </div>
                             )}
 
@@ -356,7 +361,14 @@ export default function PrintRecipe() {
 
                                 {/* RIGHT COLUMN: Vital Signs */}
                                 <div className="text-right space-y-0">
-                                    <div><span className="text-slate-500">Fecha: </span><span className="font-semibold">{new Date(consultation?.date).toLocaleDateString('es-ES')}</span></div>
+                                    <div><span className="text-slate-500">Fecha: </span><span className="font-semibold">
+                                        {(() => {
+                                            const dateStr = consultation?.date || consultation?.created;
+                                            if (!dateStr) return new Date().toLocaleDateString('es-ES');
+                                            const d = new Date(dateStr);
+                                            return isNaN(d.getTime()) ? new Date().toLocaleDateString('es-ES') : d.toLocaleDateString('es-ES');
+                                        })()}
+                                    </span></div>
                                     <div><span className="text-slate-500">Peso: </span><span className="font-semibold">{consultation?.vitalSigns?.weight || '___'} kg</span></div>
                                     <div><span className="text-slate-500">Talla: </span><span className="font-semibold">{consultation?.vitalSigns?.height || '___'} cm</span></div>
                                     <div><span className="text-slate-500">T/A: </span><span className="font-semibold">{consultation?.vitalSigns?.systolic || '___'}/{consultation?.vitalSigns?.diastolic || '___'} mmHg</span></div>
