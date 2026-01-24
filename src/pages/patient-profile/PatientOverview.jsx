@@ -60,11 +60,19 @@ export default function PatientOverview() {
 
             <button
                 onClick={() => navigate(`../historial`)}
-                className="w-full text-left bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 rounded-xl p-6 hover:shadow-md transition-shadow group"
+                className="w-full text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-primary/50 hover:shadow-md transition-all group"
             >
-                <div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white group-hover:text-red-600 transition-colors">Consulta de Seguimiento</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Dar seguimiento a una consulta previa para este paciente.</p>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Hash className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">Consulta de Seguimiento</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Dar seguimiento a un diagnóstico previo</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-primary transition-colors" />
                 </div>
             </button>
         </div>
