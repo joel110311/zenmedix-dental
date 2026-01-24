@@ -351,6 +351,20 @@ export default function ConsultationList() {
                                             Ver Receta
                                         </Button>
                                         <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => navigate(`../consulta/nueva`, {
+                                                state: {
+                                                    followUp: true,
+                                                    prevConsultation: consult
+                                                }
+                                            })}
+                                            className="border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                        >
+                                            <ClipboardList className="w-4 h-4 mr-2" />
+                                            Consulta de Seguimiento
+                                        </Button>
+                                        <Button
                                             variant={hasNotes ? "primary" : "ghost"}
                                             size="sm"
                                             onClick={() => openNotesView(consult.id)}
