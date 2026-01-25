@@ -167,9 +167,21 @@ export const api = {
 
             // Add relations if provided as IDs
             if (data.patientId) appointmentData.patient = data.patientId;
-            if (data.doctorId) appointmentData.doctor = data.doctorId;
             if (data.clinicId) appointmentData.clinic = data.clinicId;
             if (data.resourceId) appointmentData.resource_id = data.resourceId;
+
+            // FIX: Only send doctor relation if ID is valid (15 chars), otherwise append to notes
+            if (data.doctorId) {
+                if (data.doctorId.length === 15) {
+                    appointmentData.doctor = data.doctorId;
+                } else if (data.doctor?.name) {
+                    // Fallback for settings-based doctors: add to notes
+                    const doctorNote = `[Dr: ${data.doctor.name}]`;
+                    appointmentData.notes = appointmentData.notes
+                        ? `${appointmentData.notes}\n${doctorNote}`
+                        : doctorNote;
+                }
+            }
 
             try {
                 const record = await pb.collection('appointments').create(appointmentData);
