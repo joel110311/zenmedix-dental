@@ -259,6 +259,22 @@ export default function AppointmentsPage() {
                 }
             }
 
+            console.log('Creating appointment with:', {
+                patientId: selectedPatientId,
+                patientName,
+                phone,
+                date,
+                time,
+                doctorId,
+                clinicId,
+                resourceId: resourceId,
+                reason: finalReason || 'Consulta General',
+                notes,
+                status: 'scheduled',
+                doctor: settings.doctors?.find(d => d.id === doctorId),
+                clinic: settings.clinics?.find(c => c.id === clinicId)
+            });
+
             const appointment = await api.appointments.create({
                 patientId: selectedPatientId,
                 patientName,
