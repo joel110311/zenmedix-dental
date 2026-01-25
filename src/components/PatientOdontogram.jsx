@@ -195,6 +195,7 @@ export default function PatientOdontogram({
                                     <div className="text-right flex items-center gap-2">
                                         <span className="font-bold text-gray-800">${tx.treatment.price || 0}</span>
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 const newTreatments = { ...patientTreatments };
                                                 delete newTreatments[tooth];
@@ -229,6 +230,7 @@ export default function PatientOdontogram({
                                 </div>
                                 <div className="flex gap-3">
                                     <button
+                                        type="button"
                                         className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
                                         onClick={() => {
                                             setPatientTreatments({});
@@ -239,6 +241,7 @@ export default function PatientOdontogram({
                                         Cancelar
                                     </button>
                                     <button
+                                        type="button"
                                         className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                                         onClick={() => setIsPaymentModalOpen(true)}
                                     >
@@ -323,12 +326,14 @@ export default function PatientOdontogram({
 
                             <div className="flex gap-3 mt-6">
                                 <button
+                                    type="button"
                                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg"
                                     onClick={() => setIsPaymentModalOpen(false)}
                                 >
                                     Cancelar
                                 </button>
                                 <button
+                                    type="button"
                                     className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
                                     onClick={handleSaveBudget}
                                 >
@@ -356,6 +361,7 @@ export default function PatientOdontogram({
                                 <div className="grid gap-2">
                                     {availableTreatments.map(tx => (
                                         <button
+                                            type="button"
                                             key={tx.id}
                                             onClick={() => handleSelectTreatment(tx)}
                                             className="w-full text-left p-3 hover:bg-blue-50 rounded-lg border border-transparent hover:border-blue-200 transition-all group"
@@ -373,6 +379,7 @@ export default function PatientOdontogram({
 
                         <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
                             <button
+                                type="button"
                                 onClick={() => {
                                     setIsModalOpen(false);
                                     setCurrentTooth(null);
