@@ -157,7 +157,7 @@ export const api = {
             const appointmentData = {
                 patientName: data.patientName,
                 phone: data.phone,
-                date: data.date,
+                date: new Date(data.date).toISOString(),
                 time: data.time,
                 reason: data.reason || 'Consulta General',
                 notes: data.notes,
