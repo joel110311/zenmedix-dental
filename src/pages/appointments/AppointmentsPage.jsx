@@ -328,9 +328,11 @@ export default function AppointmentsPage() {
     };
 
     // Filter appointments for delete tab: only show today and future
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Use local comparison
+    const todayStr = new Date().toLocaleDateString('en-CA');
     const futureAppointments = appointments.filter(a => {
-        return a.date >= todayStr;
+        const aptDatePart = (a.date || '').split('T')[0];
+        return aptDatePart >= todayStr;
     });
 
     const filteredAppointments = futureAppointments.filter(a =>

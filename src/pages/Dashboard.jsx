@@ -53,15 +53,21 @@ export default function Dashboard() {
                 const rawDate = apt.date || '';
                 const normalizedDate = rawDate.replace(' ', 'T');
                 const aptDateStr = normalizedDate.split('T')[0];
-                const todayStr = now.toISOString().split('T')[0];
+                const nowLocal = new Date();
+                const todayLocalStr = nowLocal.toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
                 const aptDate = new Date(normalizedDate);
+                // Adjust aptDate to Local: if coming as ISO from DB (UTC 00:00), it might be previous day in local if we just use getDay().
+                // However, our api.js saves it as ISO from local.
+                // Best way: treat apt.date string part (YYYY-MM-DD) as local date directly.
+                const aptDatePart = normalizedDate.split('T')[0];
+
                 const aptDay = new Date(aptDate.getFullYear(), aptDate.getMonth(), aptDate.getDate());
 
                 // Check if this is a WhatsApp appointment without patient processed
                 const isWhatsAppPending = apt.source === 'whatsapp' && !apt.consultationCompleted && !apt.patient;
 
                 // Add to today's list (show all appointments including WhatsApp)
-                if (aptDateStr === todayStr) {
+                if (aptDatePart === todayLocalStr) {
                     todayAppointments.push(apt);
                     // Only count in stats if NOT a pending WhatsApp appointment
                     if (!isWhatsAppPending) {
@@ -99,7 +105,7 @@ export default function Dashboard() {
                 }
 
                 // Count by hour (for today) - include all
-                if (aptDateStr === todayStr) {
+                if (aptDatePart === todayLocalStr) {
                     const hour = apt.time?.split(':')[0] || '09';
                     byHour[hour] = (byHour[hour] || 0) + 1;
                 }
@@ -129,6 +135,16 @@ export default function Dashboard() {
                     } else if (typeof apt.doctor === 'string') {
                         doctorName = apt.doctor;
                     }
+
+                    // Fallback: Check in notes for [Dr: Name] pattern if still "Sin asignar"
+                    // or if it matches the fallback pattern from api.js
+                    if (doctorName === 'Sin asignar' || !apt.doctor) {
+                        const noteMatch = (apt.notes || '').match(/\[Dr:\s*([^\]]+)\]/);
+                        if (noteMatch) {
+                            doctorName = noteMatch[1];
+                        }
+                    }
+
                     byDoctor[doctorName] = (byDoctor[doctorName] || 0) + 1;
                 }
             });
@@ -369,7 +385,7 @@ export default function Dashboard() {
                                                 )}
                                                 {(() => {
                                                     // Check if WhatsApp window is open (reminder sent today)
-                                                    const today = new Date().toISOString().split('T')[0];
+                                                    const today = new Date().toLocaleDateString('en-CA');
                                                     const reminderDate = apt.reminderSentAt ? apt.reminderSentAt.split('T')[0] : null;
                                                     const isWindowOpen = apt.reminderSent && reminderDate === today;
 
@@ -499,21 +515,18 @@ export default function Dashboard() {
                                     </div>
 
                                     {/* SVG Lines */}
-                                    <svg className="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
+                                    <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                                         {clinicData.map((clinic, idx) => {
-                                            // Generate path points
-                                            const points = clinic.data.map((val, i) => {
-                                                const x = (i / (weekDays.length - 1)) * 100; // percentage
-                                                const y = maxValue === 0 ? 100 : 100 - ((val / maxValue) * 100); // percentage from top
-                                                return `${x},${y}`;
-                                            }).join(' ');
+                                            // Generate path points with numeric coordinates 0-100
 
-                                            // Generate points for circles
-                                            const circles = clinic.data.map((val, i) => {
+                                            // Scale Y to match logic (100 = 0 value, 0 = max value)
+                                            // Note: in SVG 0,0 is top-left. So max val (top) should be Y=0. min val (bottom) should be Y=100.
+
+                                            const points = clinic.data.map((val, i) => {
                                                 const x = (i / (weekDays.length - 1)) * 100;
                                                 const y = maxValue === 0 ? 100 : 100 - ((val / maxValue) * 100);
-                                                return { x, y, val };
-                                            });
+                                                return `${x},${y}`;
+                                            }).join(' ');
 
                                             const color = lineColors[idx % lineColors.length];
 
@@ -521,23 +534,10 @@ export default function Dashboard() {
                                                 <g key={clinic.name}>
                                                     <polyline
                                                         points={clinic.data.map((val, i) => {
-                                                            const x = (i / (weekDays.length - 1)) * 100 + '%';
-                                                            const y = maxValue === 0 ? 100 : 100 - ((val / maxValue) * 100) + '%';
-                                                            return `${x} ${y}`; // Note: polyline points attrib usually takes "x,y x,y", but percentage handling in SVG polyline is tricky. 
-                                                            // Actually, using viewport coords 0-100 is easier if viewbox is set. But standard div stacking is used here. 
-                                                            // Let's stick to the previous implementation style but with percentages
-                                                        }).join(' ')}
-                                                    // Wait, standard polyline doesn't accept % in points attribute easily in all browsers.
-                                                    // Better to use viewbox. But container has variable width.
-                                                    // Let's use 100x100 viewbox and scale X.
-                                                    />
-                                                    {/* Using a simpler approach for SVG curve: map 0-100 coordinate space */}
-                                                    <path
-                                                        d={`M ${clinic.data.map((val, i) => {
                                                             const x = (i / (weekDays.length - 1)) * 100;
-                                                            const y = maxValue === 0 ? 140 : 140 - ((val / maxValue) * 140);
-                                                            return `${x} ${y}`;
-                                                        }).join(' L ')}`}
+                                                            const y = maxValue === 0 ? 100 : 100 - ((val / maxValue) * 100);
+                                                            return `${x},${y}`;
+                                                        }).join(' ')}
                                                         fill="none"
                                                         stroke={color}
                                                         strokeWidth="2"
@@ -547,7 +547,7 @@ export default function Dashboard() {
                                                     {/* Circles */}
                                                     {clinic.data.map((val, i) => {
                                                         const x = (i / (weekDays.length - 1)) * 100;
-                                                        const y = maxValue === 0 ? 140 : 140 - ((val / maxValue) * 140);
+                                                        const y = maxValue === 0 ? 100 : 100 - ((val / maxValue) * 100);
                                                         return (
                                                             <circle
                                                                 key={i}
