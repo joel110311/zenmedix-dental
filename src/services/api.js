@@ -171,8 +171,16 @@ export const api = {
             if (data.clinicId) appointmentData.clinic = data.clinicId;
             if (data.resourceId) appointmentData.resource_id = data.resourceId;
 
-            const record = await pb.collection('appointments').create(appointmentData);
-            return record;
+            try {
+                const record = await pb.collection('appointments').create(appointmentData);
+                return record;
+            } catch (error) {
+                console.error('Error creating appointment:', error);
+                if (error.response?.data) {
+                    console.error('Validation errors:', error.response.data);
+                }
+                throw error;
+            }
         },
 
         update: async (id, data) => {

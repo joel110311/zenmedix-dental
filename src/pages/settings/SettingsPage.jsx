@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, Monitor, Palette, Building2, Link2, Plus, Trash2, Save, Check, ChevronRight, Settings, Hospital, HardDrive, Upload, Download, Database, MessageCircle, FileText, Users, X, AlertCircle, Info } from 'lucide-react';
+import { Sun, Moon, Monitor, Palette, Building2, Link2, Plus, Trash2, Save, Check, ChevronRight, Settings, Hospital, HardDrive, Upload, Download, Database, MessageCircle, FileText, Users, X, AlertCircle, Info, Edit2 } from 'lucide-react';
 import { THEMES, MODES, getConfigTheme, saveConfigTheme, getConfigMode, saveConfigMode } from '../../data/themeStore';
 import { useSettings } from '../../context/SettingsContext';
 import { exportBackup, importBackup, getBackupInfo, getStorageStats } from '../../services/backupService';
