@@ -267,7 +267,7 @@ export default function AppointmentsPage() {
                 time,
                 doctorId,
                 clinicId,
-                resource_id: resourceId,
+                resourceId: resourceId,
                 reason: finalReason || 'Consulta General',
                 notes,
                 status: 'scheduled',
