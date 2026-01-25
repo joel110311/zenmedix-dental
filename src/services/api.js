@@ -1,4 +1,5 @@
 import pb from './pocketbase';
+import { dentalService } from './dentalService';
 
 // API wrapper for PocketBase operations
 export const api = {
@@ -436,7 +437,10 @@ export const api = {
             });
             return record;
         }
-    }
+    },
+
+    // ==================== DENTAL SERVICE (Proxy) ====================
+    dentalService: dentalService
 };
 
 // Export default
