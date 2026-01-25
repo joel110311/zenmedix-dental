@@ -386,35 +386,61 @@ export default function SettingsPage() {
         }
     };
 
+    const [editingClinicId, setEditingClinicId] = useState(null);
+
     const handleAddClinic = async () => {
         if (newClinicName) {
-            await addClinic({
-                name: newClinicName,
-                subtitle: newClinicSubtitle,
-                phone: newClinicPhone,
-                address: newClinicAddress,
-                logo: newClinicLogo
-            });
+            if (editingClinicId) {
+                // Update existing clinic
+                await updateClinic(editingClinicId, {
+                    name: newClinicName,
+                    subtitle: newClinicSubtitle,
+                    phone: newClinicPhone,
+                    address: newClinicAddress
+                });
+                toast.success('Clínica actualizada');
+                setEditingClinicId(null);
+            } else {
+                // Create new clinic
+                await addClinic({
+                    name: newClinicName,
+                    subtitle: newClinicSubtitle,
+                    phone: newClinicPhone,
+                    address: newClinicAddress,
+                    logo: newClinicLogo
+                });
 
-            // Auto-create resources if requested
-            if (newClinicSillones > 0) {
-                try {
-                    await createInitialResources(newClinicName, newClinicSillones);
-                    toast.success(`${newClinicSillones} consultorios creados automáticamente`);
-                    loadResources(); // Refresh resources list
-                } catch (e) {
-                    console.error("Error auto-creating resources", e);
+                // Auto-create resources if requested
+                if (newClinicSillones > 0) {
+                    try {
+                        await createInitialResources(newClinicName, newClinicSillones);
+                        toast.success(`${newClinicSillones} consultorios creados automáticamente`);
+                        loadResources(); // Refresh resources list
+                    } catch (e) {
+                        console.error("Error auto-creating resources", e);
+                        toast.error('Clínica creada pero error al crear sillones (Permisos 403)');
+                    }
                 }
             }
 
+            // Reset form
             setNewClinicName('');
             setNewClinicSubtitle('');
             setNewClinicPhone('');
             setNewClinicAddress('');
             setNewClinicLogo('');
             setNewClinicSillones(1);
-            toast.success('Clínica agregada');
         }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingClinicId(null);
+        setNewClinicName('');
+        setNewClinicSubtitle('');
+        setNewClinicPhone('');
+        setNewClinicAddress('');
+        setNewClinicLogo('');
+        setNewClinicSillones(1);
     };
 
     const handleLogoUpload = (e, clinicId = null) => {
@@ -670,7 +696,15 @@ export default function SettingsPage() {
                                     )}
                                 </div>
                                 <div className="flex justify-end p-1">
-                                    <Button onClick={handleAddClinic}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
+                                    <Button onClick={handleAddClinic}>
+                                        {editingClinicId ? <Save className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+                                        {editingClinicId ? 'Guardar Cambios' : 'Agregar'}
+                                    </Button>
+                                    {editingClinicId && (
+                                        <Button variant="ghost" onClick={handleCancelEdit}>
+                                            <X className="w-4 h-4 mr-1" /> Cancelar
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -706,9 +740,10 @@ export default function SettingsPage() {
                                                 setNewClinicSubtitle(clinic.subtitle || '');
                                                 setNewClinicPhone(clinic.phone || '');
                                                 setNewClinicAddress(clinic.address || '');
-                                                // We don't load logo back into state to avoid overwriting with same base64 unnecessarily unless changed
-                                                toast.info('Datos cargados en el formulario superior para editar. Guarda como nueva o borra la anterior si deseas reemplazarla (Edición directa vendrá en v2).');
-                                            }} className="text-blue-500 hover:text-blue-700" title="Cargar datos para editar">
+                                                setEditingClinicId(clinic.id);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                toast.info('Modo edición activado');
+                                            }} className={`hover:text-blue-700 ${editingClinicId === clinic.id ? 'text-primary bg-primary-50' : 'text-blue-500'}`} title="Editar clínica">
                                                 <Edit2 className="w-4 h-4" />
                                             </Button>
                                             {clinic.logo && (
