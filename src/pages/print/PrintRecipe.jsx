@@ -15,6 +15,12 @@ export default function PrintRecipe() {
     const [consultation, setConsultation] = useState(null);
     const [patient, setPatient] = useState(null);
     const [latestBudget, setLatestBudget] = useState(null);
+    const [editing, setEditing] = useState(false);
+    const [printSize, setPrintSize] = useState('media-carta');
+    const [showHeader, setShowHeader] = useState(true);
+
+    const [editMeds, setEditMeds] = useState([]);
+    const [editIndications, setEditIndications] = useState('');
 
     useEffect(() => { loadData(); }, [id]);
 
