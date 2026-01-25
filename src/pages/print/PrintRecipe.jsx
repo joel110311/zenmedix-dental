@@ -373,28 +373,49 @@ export default function PrintRecipe() {
                                     )}
                                 </div>
 
-                                {/* RIGHT COLUMN: Vital Signs */}
-                                <div className="text-right space-y-0">
-                                    <div><span className="text-slate-500">Fecha: </span><span className="font-semibold">
-                                        {(() => {
-                                            const dateStr = consultation?.date || consultation?.created;
-                                            if (!dateStr) return new Date().toLocaleDateString('es-ES');
-                                            const d = new Date(dateStr);
-                                            return isNaN(d.getTime()) ? new Date().toLocaleDateString('es-ES') : d.toLocaleDateString('es-ES');
-                                        })()}
-                                    </span></div>
-                                    {consultation?.vitalSigns?.weight && <div><span className="text-slate-500">Peso: </span><span className="font-semibold">{consultation.vitalSigns.weight} kg</span></div>}
-                                    {consultation?.vitalSigns?.height && <div><span className="text-slate-500">Talla: </span><span className="font-semibold">{consultation.vitalSigns.height} cm</span></div>}
-                                    {(consultation?.vitalSigns?.systolic || consultation?.vitalSigns?.diastolic) && <div><span className="text-slate-500">T/A: </span><span className="font-semibold">{consultation.vitalSigns.systolic || ''}/{consultation.vitalSigns.diastolic || ''} mmHg</span></div>}
-                                    {consultation?.vitalSigns?.heartRate && <div><span className="text-slate-500">FC: </span><span className="font-semibold">{consultation.vitalSigns.heartRate} lpm</span></div>}
-                                    {consultation?.vitalSigns?.temperature && <div><span className="text-slate-500">Temp: </span><span className="font-semibold">{consultation.vitalSigns.temperature} °C</span></div>}
+                                {/* RIGHT COLUMN: Date + Budget Table (Replacing Vitals) */}
+                                <div className="text-right space-y-2">
+                                    <div>
+                                        <span className="text-slate-500">Fecha: </span>
+                                        <span className="font-semibold">
+                                            {(() => {
+                                                const dateStr = consultation?.date || consultation?.created;
+                                                if (!dateStr) return new Date().toLocaleDateString('es-ES');
+                                                const d = new Date(dateStr);
+                                                return isNaN(d.getTime()) ? new Date().toLocaleDateString('es-ES') : d.toLocaleDateString('es-ES');
+                                            })()}
+                                        </span>
+                                    </div>
+
+                                    {/* Budget Table in Right Column */}
+                                    {latestBudget && (
+                                        <div className="border rounded bg-slate-50 p-2 mt-2 text-left">
+                                            <h3 className="text-[9px] font-bold text-slate-700 mb-1 uppercase border-b border-slate-200 pb-1">Presupuesto Activo</h3>
+                                            <table className="w-full text-[9px]">
+                                                <tbody>
+                                                    {latestBudget.items?.map((item, idx) => (
+                                                        <tr key={idx} className="border-b border-slate-100 last:border-0">
+                                                            <td className="py-0.5 truncate max-w-[100px]">{item.name}</td>
+                                                            <td className="py-0.5 text-right font-semibold">${item.price}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr className="border-t border-slate-200">
+                                                        <td className="pt-1 text-[9px] text-slate-500">Total</td>
+                                                        <td className="pt-1 text-right font-bold text-slate-800 text-[10px]">${latestBudget.total}</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
                             </section>
 
-                            {/* Spacer - pushes Indicaciones lower on the page */}
+                            {/* Spacer */}
                             <div className="flex-grow min-h-[3rem]"></div>
 
-                            {/* Indications - Lower on the page */}
+                            {/* Indications */}
                             <section className="mb-1">
                                 <h3 className="text-[11px] font-semibold text-slate-800 mb-0">Indicaciones:</h3>
                                 {editing ? (
@@ -409,35 +430,6 @@ export default function PrintRecipe() {
                                 <section className="text-[10px] mb-1">
                                     <span className="font-semibold text-slate-700">Dx: </span>
                                     <span className="text-slate-600">{consultation.diagnosis}</span>
-                                </section>
-                            )}
-
-                            {/* Optional: Latest Budget Table */}
-                            {latestBudget && (
-                                <section className="mt-4 border-t pt-2">
-                                    <h3 className="text-[10px] font-bold text-slate-700 mb-1 uppercase">Presupuesto / Tratamientos</h3>
-                                    <table className="w-full text-[9px]">
-                                        <thead>
-                                            <tr className="border-b text-slate-500">
-                                                <th className="text-left font-medium pb-1">Tratamiento</th>
-                                                <th className="text-right font-medium pb-1">Precio</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {latestBudget.items?.map((item, idx) => (
-                                                <tr key={idx} className="border-b border-slate-100">
-                                                    <td className="py-1">{item.name} {item.tooth ? `(Diente ${item.tooth})` : ''}</td>
-                                                    <td className="py-1 text-right">${item.price}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td className="text-right font-bold pt-1">Total:</td>
-                                                <td className="text-right font-bold pt-1">${latestBudget.total}</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
                                 </section>
                             )}
 
