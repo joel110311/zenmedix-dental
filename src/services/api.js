@@ -137,6 +137,9 @@ export const api = {
             });
             return records.map(r => ({
                 ...r,
+                patientId: r.patient, // Preserve ID explicitly
+                doctorId: r.doctor,
+                clinicId: r.clinic,
                 patient: r.expand?.patient,
                 doctor: r.expand?.doctor,
                 clinic: r.expand?.clinic

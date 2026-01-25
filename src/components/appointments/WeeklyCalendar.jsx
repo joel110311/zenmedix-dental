@@ -39,8 +39,8 @@ const WeeklyCalendar = ({ appointments, currentDate, onDateChange, clinics = [] 
         });
     }, [weekStart]);
 
-    // Hours 8:00 to 20:00
-    const hours = Array.from({ length: 13 }, (_, i) => 8 + i);
+    // Hours 7:00 to 23:00 to cover all shifts
+    const hours = Array.from({ length: 17 }, (_, i) => 7 + i);
 
     const getWeekRange = () => {
         const end = new Date(weekStart);
