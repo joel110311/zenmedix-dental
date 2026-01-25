@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Odontogram from './Odontogram/src/Odontogram';
 import { dentalService } from '../services/dentalService';
 import { toast } from 'sonner';
@@ -13,11 +14,69 @@ export default function PatientOdontogram({
     initialTreatments = null, // If provided, we don't fetch
     onTreatmentsChange = null // Callback when treatments change
 }) {
+    const navigate = useNavigate();
     const [selectedTeeth, setSelectedTeeth] = useState([]);
     const [patientTreatments, setPatientTreatments] = useState({}); // Map tooth ID to treatment
     const [availableTreatments, setAvailableTreatments] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentTooth, setCurrentTooth] = useState(null);
+
+    // Payment Plan Modal State
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [planType, setPlanType] = useState('Contado'); // Contado, Semanal, Quincenal, Mensual
+    const [planDuration, setPlanDuration] = useState(1);
+    const [interestRate, setInterestRate] = useState(0);
+
+    const calculatePayment = () => {
+        const total = Object.values(patientTreatments).reduce((sum, tx) => sum + (tx.treatment.price || 0), 0);
+        if (planType === 'Contado') return { total, perPayment: total, count: 1 };
+
+        const interest = total * (interestRate / 100);
+        const finalTotal = total + interest;
+        const count = planType === 'Semanal' ? planDuration * 4 : planType === 'Quincenal' ? planDuration * 2 : planDuration;
+        return { total: finalTotal, perPayment: finalTotal / count, count, interest };
+    };
+
+    const handleSaveBudget = async () => {
+        if (Object.keys(patientTreatments).length === 0) return;
+
+        try {
+            const calculation = calculatePayment();
+            const budgetData = {
+                patient: patientId,
+                items: Object.entries(patientTreatments).map(([tooth, tx]) => ({
+                    tooth: tooth.replace('teeth-', ''),
+                    name: tx.treatment.name,
+                    price: tx.treatment.price,
+                    code: tx.treatment.code
+                })),
+                total: calculation.total,
+                status: 'pending',
+                plan: {
+                    type: planType,
+                    duration: planDuration,
+                    interest: interestRate,
+                    breakdown: calculation
+                }
+            };
+
+            const newBudget = await dentalService.createBudget(budgetData);
+            toast.success('Presupuesto creado');
+            setIsPaymentModalOpen(false);
+
+            // Navigate to print view
+            navigate(`/imprimir/presupuesto/${newBudget.id}`);
+
+            // Clear
+            setPatientTreatments({});
+            setSelectedTeeth([]);
+            if (onTreatmentsChange) onTreatmentsChange({});
+
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al guardar presupuesto');
+        }
+    };
 
     useEffect(() => {
         loadData();
@@ -181,10 +240,7 @@ export default function PatientOdontogram({
                                     </button>
                                     <button
                                         className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                                        onClick={() => {
-                                            toast.success('Presupuesto listo para guardar');
-                                            // Here logic could be added to save as budget directly
-                                        }}
+                                        onClick={() => setIsPaymentModalOpen(true)}
                                     >
                                         Guardar
                                     </button>
@@ -194,6 +250,95 @@ export default function PatientOdontogram({
                     </div>
                 </div>
             </div>
+
+            {/* Payment Plan Modal */}
+            {isPaymentModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800">Configurar Plan de Pagos</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Plan</label>
+                                <select
+                                    className="w-full border rounded-lg p-2"
+                                    value={planType}
+                                    onChange={e => setPlanType(e.target.value)}
+                                >
+                                    <option value="Contado">Contado (Pago Único)</option>
+                                    <option value="Semanal">Semanal</option>
+                                    <option value="Quincenal">Quincenal</option>
+                                    <option value="Mensual">Mensual</option>
+                                </select>
+                            </div>
+
+                            {planType !== 'Contado' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Duración ({planType === 'Mensual' ? 'Meses' : planType === 'Semanal' ? 'Semanas' : 'Quincenas'})</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="24"
+                                            className="w-full border rounded-lg p-2"
+                                            value={planDuration}
+                                            onChange={e => setPlanDuration(Number(e.target.value))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Interés / Comisión (%)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            className="w-full border rounded-lg p-2"
+                                            value={interestRate}
+                                            onChange={e => setInterestRate(Number(e.target.value))}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-slate-50 p-4 rounded-lg border mt-4">
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-gray-600">Subtotal Tratamientos:</span>
+                                    <span className="font-semibold">${Object.values(patientTreatments).reduce((sum, tx) => sum + (tx.treatment.price || 0), 0)}</span>
+                                </div>
+                                {planType !== 'Contado' && (
+                                    <div className="flex justify-between mb-2 text-sm text-blue-600">
+                                        <span>+ Interés ({interestRate}%):</span>
+                                        <span>${calculatePayment().interest.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between border-t pt-2 mt-2 text-lg font-bold text-gray-900">
+                                    <span>Total Final:</span>
+                                    <span>${calculatePayment().total.toFixed(2)}</span>
+                                </div>
+                                {planType !== 'Contado' && (
+                                    <div className="mt-2 text-center text-sm font-medium bg-white p-2 rounded border border-blue-100 text-blue-800">
+                                        {Math.ceil(calculatePayment().count)} pagos de ${calculatePayment().perPayment.toFixed(2)}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg"
+                                    onClick={() => setIsPaymentModalOpen(false)}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
+                                    onClick={handleSaveBudget}
+                                >
+                                    Confirmar e Imprimir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Treatment Selection Modal */}
             {isModalOpen && (

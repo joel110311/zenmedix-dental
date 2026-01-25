@@ -66,8 +66,8 @@ export const OdontogramTooltip: React.FC<OdontogramTooltipProps> = ({
       {/* tooltip content */}
       {getContent(content, payload) ?? (
         <>
-          <div>Tooth: {payload?.notations?.fdi}</div>
-          <div>Type: {payload?.type}</div>
+          <div>Diente: {payload?.notations?.fdi}</div>
+          <div>Tipo: {payload?.type}</div>
           <div>
             Universal: {payload?.notations?.universal}, Palmer:{" "}
             {payload?.notations?.palmer}

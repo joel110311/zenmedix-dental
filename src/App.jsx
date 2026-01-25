@@ -102,6 +102,11 @@ function App() {
                   <PrintStudyRequest />
                 </ProtectedRoute>
               } />
+              <Route path="/imprimir/presupuesto/:id" element={
+                <ProtectedRoute>
+                  <PrintBudgetPlan />
+                </ProtectedRoute>
+              } />
             </Routes>
           </PatientProvider>
         </SettingsProvider>

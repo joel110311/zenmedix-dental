@@ -87,7 +87,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
                         {!collapsed && (
                             <span className="text-xl font-bold">
                                 <span className="text-teal-500">Zen</span>
-                                <span className="text-slate-700 dark:text-white">Medix</span>
+                                <span className="text-slate-700 dark:text-white">Medix Dental</span>
                             </span>
                         )}
                     </div>
@@ -154,7 +154,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
                         </div>
                     </div>
                 )}
-            </div>
+            </div >
         </>
     );
 };
