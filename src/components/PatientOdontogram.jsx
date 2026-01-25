@@ -123,28 +123,74 @@ export default function PatientOdontogram({
                 </div>
 
                 <div className="w-full md:w-80 flex flex-col">
-                    <h3 className="font-semibold mb-3 text-gray-700">Treatments Summary</h3>
-                    <div className="flex-1 border rounded-lg bg-gray-50 overflow-hidden flex flex-col">
-                        <div className="overflow-y-auto p-2 space-y-2 max-h-[400px]">
+                    <h3 className="font-semibold mb-3 text-gray-700 uppercase">RESUMEN</h3>
+                    <div className="flex-1 border rounded-lg bg-white overflow-hidden flex flex-col shadow-sm">
+                        <div className="overflow-y-auto p-4 space-y-3 max-h-[400px] flex-1">
                             {Object.entries(patientTreatments).map(([tooth, tx]) => (
-                                <div key={tooth} className="p-3 border rounded-md bg-white shadow-sm flex justify-between items-center group hover:border-blue-200 transition-colors">
+                                <div key={tooth} className="p-3 border-l-4 border-blue-500 bg-slate-50 rounded flex justify-between items-start group">
                                     <div className="flex flex-col">
-                                        <span className="font-semibold text-gray-800">Tooth {tooth.replace('teeth-', '')}</span>
-                                        <span className="text-xs text-gray-500">{new Date(tx.date).toLocaleDateString()}</span>
+                                        <span className="font-medium text-gray-900">{tx.treatment.name}</span>
+                                        <span className="text-xs text-slate-500 uppercase">{tx.treatment.code || 'S/C'}</span>
+                                        <span className="text-xs text-blue-600 font-semibold mt-1">Diente {tooth.replace('teeth-', '')}</span>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="font-medium text-blue-600">{tx.treatment.name}</div>
-                                        <div className="text-xs text-gray-400 capitalize">{tx.status}</div>
+                                    <div className="text-right flex items-center gap-2">
+                                        <span className="font-bold text-gray-800">${tx.treatment.price || 0}</span>
+                                        <button
+                                            onClick={() => {
+                                                const newTreatments = { ...patientTreatments };
+                                                delete newTreatments[tooth];
+                                                setPatientTreatments(newTreatments);
+                                                const newSelected = selectedTeeth.filter(t => t !== tooth);
+                                                setSelectedTeeth(newSelected);
+                                                if (onTreatmentsChange) onTreatmentsChange(newTreatments);
+                                            }}
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                            title="Eliminar"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
                             {Object.keys(patientTreatments).length === 0 && (
-                                <div className="text-center p-8 text-gray-400">
-                                    No treatments recorded yet.
-                                    <br />Select a tooth to start.
+                                <div className="text-center py-10 text-gray-400 text-sm">
+                                    Selecciona un diente para agregar tratamientos.
                                 </div>
                             )}
                         </div>
+
+                        {/* Budget Footer */}
+                        {Object.keys(patientTreatments).length > 0 && (
+                            <div className="border-t p-4 bg-gray-50">
+                                <div className="flex justify-between items-end mb-4">
+                                    <span className="text-lg font-bold text-gray-800">Total</span>
+                                    <span className="text-2xl font-bold text-slate-900">
+                                        ${Object.values(patientTreatments).reduce((sum, tx) => sum + (tx.treatment.price || 0), 0)}
+                                    </span>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                                        onClick={() => {
+                                            setPatientTreatments({});
+                                            setSelectedTeeth([]);
+                                            if (onTreatmentsChange) onTreatmentsChange({});
+                                        }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                        onClick={() => {
+                                            toast.success('Presupuesto listo para guardar');
+                                            // Here logic could be added to save as budget directly
+                                        }}
+                                    >
+                                        Guardar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
