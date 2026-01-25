@@ -81,7 +81,18 @@ export default function BudgetsPage() {
                 items: selectedTreatments.map(t => ({ id: t.id, name: t.name, price: t.price, code: t.code })),
                 total: calculateTotal(),
                 status: 'pending',
-                payments: []
+                payments: [],
+                plan: {
+                    type: 'Contado',
+                    duration: 1,
+                    interest: 0,
+                    breakdown: {
+                        total: calculateTotal(),
+                        perPayment: calculateTotal(),
+                        count: 1,
+                        interest: 0
+                    }
+                }
             });
             toast.success('Presupuesto creado');
             setShowCreate(false);

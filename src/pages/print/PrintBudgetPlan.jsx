@@ -99,7 +99,7 @@ export default function PrintBudgetPlan() {
                         {/* Payment Breakdown Preview */}
                         <div className="mb-8">
                             <h3 className="font-bold text-slate-800 mb-3 text-sm uppercase">Resumen de Pagos</h3>
-                            {budget?.plan?.type === 'Contado' ? (
+                            {(budget?.plan?.type || 'Contado') === 'Contado' ? (
                                 <div className="p-4 bg-green-50 border border-green-100 rounded text-center text-green-800 font-medium">
                                     Pago Único de ${budget.total?.toFixed(2)}
                                 </div>
@@ -252,8 +252,8 @@ export default function PrintBudgetPlan() {
                             <div className="flex-1 bg-blue-50 p-3 rounded border border-blue-100">
                                 <span className="block text-xs text-blue-600 uppercase font-bold mb-1">Plan Elegido</span>
                                 <span className="text-lg font-bold text-blue-900">
-                                    {budget?.plan?.type}
-                                    {budget?.plan?.type !== 'Contado' && ` (${budget?.plan?.duration} ${budget?.plan?.type === 'Mensual' ? 'Meses' : budget?.plan?.type === 'Semanal' ? 'Semanas' : 'Quincenas'})`}
+                                    {budget?.plan?.type || 'Contado'}
+                                    {(budget?.plan?.type || 'Contado') !== 'Contado' && ` (${budget?.plan?.duration} ${budget?.plan?.type === 'Mensual' ? 'Meses' : budget?.plan?.type === 'Semanal' ? 'Semanas' : 'Quincenas'})`}
                                 </span>
                             </div>
                             <div className="flex-1 bg-white p-3 rounded border border-slate-200">
