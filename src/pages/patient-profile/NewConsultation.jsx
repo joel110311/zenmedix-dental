@@ -1,7 +1,8 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { Save, Plus, Trash2, FileText, Stethoscope, Pill, FlaskConical, AlertTriangle, User, Phone, Calendar, Heart, Search, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react';
+import { Save, Plus, Trash2, FileText, Stethoscope, Pill, FlaskConical, AlertTriangle, User, Phone, Calendar, Heart, Search, ChevronDown, ChevronUp, ClipboardList, Grid } from 'lucide-react';
+import PatientOdontogram from '../../components/PatientOdontogram';
 import { api } from '../../services/api';
 import { usePatient } from '../../context/PatientContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -131,6 +132,28 @@ export default function NewConsultation() {
     const followUpData = location.state?.followUp ? location.state.prevConsultation : null;
     const [showContext, setShowContext] = useState(true); // Toggle for Context Card
 
+    // Odontogram State
+    const [odontogramSnapshot, setOdontogramSnapshot] = useState({});
+    const [initialOdontogram, setInitialOdontogram] = useState(null);
+
+    // Initial load for Odontogram
+    useEffect(() => {
+        const loadPreviousOdontogram = async () => {
+            if (!activePatient) return;
+            try {
+                const history = await api.consultations.listByPatient(activePatient.id);
+                const lastConsult = history.find(c => c.data_especifica?.odontogram);
+                if (lastConsult) {
+                    setInitialOdontogram(lastConsult.data_especifica.odontogram);
+                    setOdontogramSnapshot(lastConsult.data_especifica.odontogram);
+                }
+            } catch (e) {
+                console.error("Error loading previous odontogram", e);
+            }
+        };
+        loadPreviousOdontogram();
+    }, [activePatient]);
+
     useEffect(() => {
         setMedicationHistory(getMedicationHistory());
     }, []);
@@ -181,7 +204,10 @@ export default function NewConsultation() {
                 bmi,
                 clinic: getActiveClinic(),
                 doctor: getActiveDoctor(),
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                data_especifica: {
+                    odontogram: odontogramSnapshot
+                }
             };
 
             // Add parent_id if this is a follow-up
@@ -229,6 +255,7 @@ export default function NewConsultation() {
     // Tab definitions
     const tabs = [
         { id: 'consulta', label: 'Consulta', icon: FileText },
+        { id: 'odontograma', label: 'Odontograma', icon: Grid },
         { id: 'diagnostico', label: 'Diagnóstico', icon: Stethoscope },
         { id: 'tratamiento', label: 'Tratamiento', icon: Pill },
         { id: 'estudios', label: 'Estudios', icon: FlaskConical },
@@ -456,63 +483,21 @@ export default function NewConsultation() {
                             </div>
                         </Card>
 
-                        <Card title="Signos Vitales">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">T/A Sistólica</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" autoComplete="off" {...register('vitalSigns.systolic')} placeholder="120" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">mmHg</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">T/A Diastólica</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" autoComplete="off" {...register('vitalSigns.diastolic')} placeholder="80" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">mmHg</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Frec. Cardíaca</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" autoComplete="off" {...register('vitalSigns.heartRate')} placeholder="72" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">lpm</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Temperatura</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" step="0.1" autoComplete="off" {...register('vitalSigns.temperature')} placeholder="36.5" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">°C</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">SpO2</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" autoComplete="off" {...register('vitalSigns.spO2')} placeholder="98" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">%</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Peso</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" step="0.1" autoComplete="off" {...register('vitalSigns.weight')} placeholder="70" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">kg</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Talla</label>
-                                    <div className="flex items-center gap-1">
-                                        <input type="number" autoComplete="off" {...register('vitalSigns.height')} placeholder="170" className="flex-1 min-w-0 w-20 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary" />
-                                        <span className="text-xs text-slate-400 w-10 text-right">cm</span>
-                                    </div>
-                                </div>
+
+                    </div>
+                )}
+
+                {/* Odontograma Tab */}
+                {activeTab === 'odontograma' && (
+                    <div className="space-y-6">
+                        <Card title="Odontograma / Estado Dental">
+                            <div className="min-h-[500px]">
+                                <PatientOdontogram
+                                    patientId={activePatient.id}
+                                    initialTreatments={initialOdontogram}
+                                    onTreatmentsChange={setOdontogramSnapshot}
+                                />
                             </div>
-                            {bmi && (
-                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">IMC Calculado: {bmi}</span>
-                                </div>
-                            )}
                         </Card>
                     </div>
                 )}

@@ -169,6 +169,7 @@ export const api = {
             if (data.patientId) appointmentData.patient = data.patientId;
             if (data.doctorId) appointmentData.doctor = data.doctorId;
             if (data.clinicId) appointmentData.clinic = data.clinicId;
+            if (data.resourceId) appointmentData.resource_id = data.resourceId;
 
             const record = await pb.collection('appointments').create(appointmentData);
             return record;
@@ -185,17 +186,24 @@ export const api = {
         },
 
         // Check availability for n8n integration
-        checkAvailability: async (clinicId, doctorId, date, time) => {
+        checkAvailability: async (clinicId, doctorId, date, time, resourceId) => {
             try {
-                // Build filter
-                let filter = `date = "${date}" && time = "${time}" && status != "cancelled"`;
-                if (doctorId) filter += ` && doctor = "${doctorId}"`;
-                if (clinicId) filter += ` && clinic = "${clinicId}"`;
+                // Build base filter
+                let baseFilter = `date = "${date}" && time = "${time}" && status != "cancelled"`;
+                if (clinicId) baseFilter += ` && clinic = "${clinicId}"`;
 
-                const existing = await pb.collection('appointments').getList(1, 1, { filter });
+                // Check Doctor Availability
+                if (doctorId) {
+                    const docFilter = `${baseFilter} && doctor = "${doctorId}"`;
+                    const docBusy = await pb.collection('appointments').getList(1, 1, { filter: docFilter });
+                    if (docBusy.totalItems > 0) return { available: false, reason: 'Doctor ocupado en este horario' };
+                }
 
-                if (existing.totalItems > 0) {
-                    return { available: false, reason: 'Horario ocupado' };
+                // Check Resource/Chair Availability
+                if (resourceId) {
+                    const resFilter = `${baseFilter} && resource_id = "${resourceId}"`;
+                    const resBusy = await pb.collection('appointments').getList(1, 1, { filter: resFilter });
+                    if (resBusy.totalItems > 0) return { available: false, reason: 'Sillón/Box ocupado en este horario' };
                 }
 
                 // Check clinic schedule if clinicId provided

@@ -594,6 +594,12 @@
         "required": false
       },
       {
+        "id": "jsonDataEsp001",
+        "name": "data_especifica",
+        "type": "json",
+        "required": false
+      },
+      {
         "id": "autodate2990389176",
         "name": "created",
         "type": "autodate",

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { ArrowLeft, Save, Plus, Trash2, Printer, AlertTriangle, Activity, Thermometer, Scale, Ruler } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { api } from '../../services/api';
 import { usePatient } from '../../context/PatientContext';
 import { Card } from '../../components/ui/Card';
@@ -10,6 +10,7 @@ import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Spinner } from '../../components/ui/Spinner';
 import { toast } from 'sonner';
+import PatientOdontogram from '../../components/PatientOdontogram';
 
 // Calculate age from DOB
 const calculateAge = (dob) => {
@@ -24,14 +25,6 @@ const calculateAge = (dob) => {
     return age;
 };
 
-// Calculate BMI
-const calculateBMI = (weight, height) => {
-    if (!weight || !height) return null;
-    const heightM = height / 100;
-    const bmi = weight / (heightM * heightM);
-    return bmi.toFixed(1);
-};
-
 export default function ConsultationPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -41,12 +34,15 @@ export default function ConsultationPage() {
     const [patient, setPatient] = useState(null);
     const [consultations, setConsultations] = useState([]);
 
-    const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
+    // Odontogram state
+    const [odontogramSnapshot, setOdontogramSnapshot] = useState({});
+    const [initialOdontogram, setInitialOdontogram] = useState(null);
+
+    const { register, handleSubmit, control, formState: { errors } } = useForm({
         defaultValues: {
             allergies: '',
             pathologicalHistory: '',
             nonPathologicalHistory: '',
-            vitalSigns: { systolic: '', diastolic: '', heartRate: '', temperature: '', weight: '', height: '' },
             chiefComplaint: '',
             diagnosis: '',
             treatmentPlan: '',
@@ -55,10 +51,6 @@ export default function ConsultationPage() {
     });
 
     const { fields, append, remove } = useFieldArray({ control, name: 'medications' });
-
-    const watchWeight = watch('vitalSigns.weight');
-    const watchHeight = watch('vitalSigns.height');
-    const bmi = calculateBMI(watchWeight, watchHeight);
 
     useEffect(() => {
         loadPatientData();
@@ -73,12 +65,26 @@ export default function ConsultationPage() {
 
             const history = await api.consultations.listByPatient(id);
             setConsultations(history);
+
+            // Find the most recent odontogram snapshot from previous consultations
+            const lastConsultWithOdontogram = history.find(c => c.data_especifica?.odontogram);
+            if (lastConsultWithOdontogram) {
+                console.log("Loading previous odontogram", lastConsultWithOdontogram.data_especifica.odontogram);
+                setInitialOdontogram(lastConsultWithOdontogram.data_especifica.odontogram);
+                setOdontogramSnapshot(lastConsultWithOdontogram.data_especifica.odontogram);
+            }
+
         } catch (error) {
+            console.error(error);
             toast.error('Error al cargar datos del paciente');
             navigate('/pacientes');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleOdontogramChange = (newTreatments) => {
+        setOdontogramSnapshot(newTreatments);
     };
 
     const onSubmit = async (data) => {
@@ -94,17 +100,19 @@ export default function ConsultationPage() {
             // Create new consultation
             const consultation = await api.consultations.create({
                 patientId: id,
-                vitalSigns: data.vitalSigns,
                 chiefComplaint: data.chiefComplaint,
                 diagnosis: data.diagnosis,
                 treatmentPlan: data.treatmentPlan,
                 medications: data.medications.filter(m => m.name),
-                bmi
+                data_especifica: {
+                    odontogram: odontogramSnapshot
+                }
             });
 
             toast.success('Consulta guardada correctamente');
             navigate(`/imprimir/receta/${consultation.id}`);
         } catch (error) {
+            console.error(error);
             toast.error('Error al guardar la consulta');
         } finally {
             setSaving(false);
@@ -175,101 +183,15 @@ export default function ConsultationPage() {
                     </div>
                 </Card>
 
-                {/* Vital Signs Section */}
-                <Card title="Signos Vitales">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1">
-                                <Activity className="w-3 h-3 inline mr-1" />
-                                TA Sistólica
-                            </label>
-                            <div className="flex items-center">
-                                <input
-                                    type="number"
-                                    {...register('vitalSigns.systolic')}
-                                    className="w-full px-2 py-2 border border-slate-300 rounded-md text-center"
-                                    placeholder="120"
-                                />
-                                <span className="ml-1 text-xs text-slate-400">mmHg</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1">TA Diastólica</label>
-                            <div className="flex items-center">
-                                <input
-                                    type="number"
-                                    {...register('vitalSigns.diastolic')}
-                                    className="w-full px-2 py-2 border border-slate-300 rounded-md text-center"
-                                    placeholder="80"
-                                />
-                                <span className="ml-1 text-xs text-slate-400">mmHg</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1">Frec. Cardíaca</label>
-                            <div className="flex items-center">
-                                <input
-                                    type="number"
-                                    {...register('vitalSigns.heartRate')}
-                                    className="w-full px-2 py-2 border border-slate-300 rounded-md text-center"
-                                    placeholder="72"
-                                />
-                                <span className="ml-1 text-xs text-slate-400">bpm</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1">
-                                <Thermometer className="w-3 h-3 inline mr-1" />
-                                Temperatura
-                            </label>
-                            <div className="flex items-center">
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    {...register('vitalSigns.temperature')}
-                                    className="w-full px-2 py-2 border border-slate-300 rounded-md text-center"
-                                    placeholder="36.5"
-                                />
-                                <span className="ml-1 text-xs text-slate-400">°C</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1">
-                                <Scale className="w-3 h-3 inline mr-1" />
-                                Peso
-                            </label>
-                            <div className="flex items-center">
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    {...register('vitalSigns.weight')}
-                                    className="w-full px-2 py-2 border border-slate-300 rounded-md text-center"
-                                    placeholder="70"
-                                />
-                                <span className="ml-1 text-xs text-slate-400">kg</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1">
-                                <Ruler className="w-3 h-3 inline mr-1" />
-                                Talla
-                            </label>
-                            <div className="flex items-center">
-                                <input
-                                    type="number"
-                                    {...register('vitalSigns.height')}
-                                    className="w-full px-2 py-2 border border-slate-300 rounded-md text-center"
-                                    placeholder="170"
-                                />
-                                <span className="ml-1 text-xs text-slate-400">cm</span>
-                            </div>
-                        </div>
+                {/* Dental Chart / Odontogram */}
+                <Card title="Odontograma (Estado Actual)">
+                    <div className="min-h-[500px]">
+                        <PatientOdontogram
+                            patientId={id}
+                            initialTreatments={initialOdontogram}
+                            onTreatmentsChange={handleOdontogramChange}
+                        />
                     </div>
-                    {bmi && (
-                        <div className="mt-4 p-3 bg-blue-50 rounded-lg inline-block">
-                            <span className="text-sm text-blue-700 font-medium">IMC Calculado: {bmi} kg/m²</span>
-                        </div>
-                    )}
                 </Card>
 
                 {/* Anamnesis Section */}
@@ -285,7 +207,7 @@ export default function ConsultationPage() {
                         <Input
                             label="Diagnóstico Presuntivo"
                             {...register('diagnosis')}
-                            placeholder="Ej: Infección respiratoria aguda"
+                            placeholder="Ej: Caries dental, Gingivitis..."
                         />
                     </div>
                 </Card>
@@ -297,7 +219,7 @@ export default function ConsultationPage() {
                             label="Indicaciones Generales"
                             {...register('treatmentPlan')}
                             rows={3}
-                            placeholder="Reposo, hidratación, dieta, cuidados..."
+                            placeholder="Instrucciones para el paciente..."
                         />
 
                         <div>
@@ -322,15 +244,15 @@ export default function ConsultationPage() {
                                                 {...register(`medications.${index}.name`)}
                                             />
                                             <Input
-                                                placeholder="Dosis (ej: 500mg)"
+                                                placeholder="Dosis"
                                                 {...register(`medications.${index}.dose`)}
                                             />
                                             <Input
-                                                placeholder="Frecuencia (ej: c/8h)"
+                                                placeholder="Frecuencia"
                                                 {...register(`medications.${index}.frequency`)}
                                             />
                                             <Input
-                                                placeholder="Duración (ej: 7 días)"
+                                                placeholder="Duración"
                                                 {...register(`medications.${index}.duration`)}
                                             />
                                         </div>
@@ -352,7 +274,13 @@ export default function ConsultationPage() {
                 </Card>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-3 pt-4 items-center">
+                    <div className="flex-1">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                            <span className="text-sm text-gray-700 font-medium">Consentimiento Informado Firmado</span>
+                        </label>
+                    </div>
                     <Button variant="secondary" type="button" onClick={() => navigate('/pacientes')}>
                         Cancelar
                     </Button>
