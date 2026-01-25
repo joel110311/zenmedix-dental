@@ -14,12 +14,7 @@ export default function PrintRecipe() {
     const [loading, setLoading] = useState(true);
     const [consultation, setConsultation] = useState(null);
     const [patient, setPatient] = useState(null);
-    const [editing, setEditing] = useState(false);
-    const [printSize, setPrintSize] = useState('media-carta');
-    const [showHeader, setShowHeader] = useState(true);
-
-    const [editMeds, setEditMeds] = useState([]);
-    const [editIndications, setEditIndications] = useState('');
+    const [latestBudget, setLatestBudget] = useState(null);
 
     useEffect(() => { loadData(); }, [id]);
 
@@ -30,13 +25,28 @@ export default function PrintRecipe() {
             setEditIndications(consultData.treatmentPlan || '');
 
             // Try to get patient from expansion first, fallback to fetch
+            let patientId = consultData.patient;
             if (consultData.expand?.patient) {
                 setPatient(consultData.expand.patient);
+                patientId = consultData.expand.patient.id;
             } else if (consultData.patient) {
                 const patientData = await api.patients.get(consultData.patient);
                 setPatient(patientData);
             } else {
                 throw new Error('No se encontró información del paciente en la consulta');
+            }
+
+            // Load latest budget
+            if (patientId) {
+                try {
+                    const budgets = await api.dentalService.getBudgets(patientId);
+                    if (budgets && budgets.length > 0) {
+                        // Get the most recent one
+                        setLatestBudget(budgets[0]);
+                    }
+                } catch (err) {
+                    console.error('Error loading budget info', err);
+                }
             }
         } catch (error) {
             console.error('Error loading recipe:', error);
@@ -333,29 +343,33 @@ export default function PrintRecipe() {
                                     <div><span className="text-slate-500">Paciente: </span><span className="font-semibold">{patient?.firstName} {patient?.lastName}</span></div>
                                     <div><span className="text-slate-500">Edad: </span><span className="font-semibold">{age} años</span></div>
 
-                                    {/* Medications immediately after Edad */}
-                                    {editing ? (
-                                        <div className="space-y-1 mt-1">
-                                            {editMeds.map((med, index) => (
-                                                <div key={index} className="flex gap-1 items-center bg-slate-50 p-1 rounded text-[10px]">
-                                                    <input value={med.name} onChange={(e) => updateMed(index, 'name', e.target.value)} placeholder="Medicamento" className="flex-1 border rounded px-1 py-0.5" />
-                                                    <input value={med.dose} onChange={(e) => updateMed(index, 'dose', e.target.value)} placeholder="Dosis" className="w-16 border rounded px-1 py-0.5" />
-                                                    <input value={med.frequency} onChange={(e) => updateMed(index, 'frequency', e.target.value)} placeholder="Frec." className="w-20 border rounded px-1 py-0.5" />
-                                                    <input value={med.duration} onChange={(e) => updateMed(index, 'duration', e.target.value)} placeholder="Dur." className="w-16 border rounded px-1 py-0.5" />
-                                                    <button onClick={() => removeMed(index)} className="text-red-500 hover:bg-red-50 p-0.5 rounded text-xs">✕</button>
+                                    {/* Medications - Only show if has content */}
+                                    {((consultation?.medications || []).filter(m => m.name).length > 0 || editing) && (
+                                        <>
+                                            {editing ? (
+                                                <div className="space-y-1 mt-1">
+                                                    {editMeds.map((med, index) => (
+                                                        <div key={index} className="flex gap-1 items-center bg-slate-50 p-1 rounded text-[10px]">
+                                                            <input value={med.name} onChange={(e) => updateMed(index, 'name', e.target.value)} placeholder="Medicamento" className="flex-1 border rounded px-1 py-0.5" />
+                                                            <input value={med.dose} onChange={(e) => updateMed(index, 'dose', e.target.value)} placeholder="Dosis" className="w-16 border rounded px-1 py-0.5" />
+                                                            <input value={med.frequency} onChange={(e) => updateMed(index, 'frequency', e.target.value)} placeholder="Frec." className="w-20 border rounded px-1 py-0.5" />
+                                                            <input value={med.duration} onChange={(e) => updateMed(index, 'duration', e.target.value)} placeholder="Dur." className="w-16 border rounded px-1 py-0.5" />
+                                                            <button onClick={() => removeMed(index)} className="text-red-500 hover:bg-red-50 p-0.5 rounded text-xs">✕</button>
+                                                        </div>
+                                                    ))}
+                                                    <button onClick={addMed} className="text-blue-600 text-[10px] hover:underline">+ Agregar</button>
                                                 </div>
-                                            ))}
-                                            <button onClick={addMed} className="text-blue-600 text-[10px] hover:underline">+ Agregar</button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-0">
-                                            {(consultation?.medications || []).filter(m => m.name).map((med, index) => (
-                                                <div key={index}>
-                                                    <p className="font-semibold">{index + 1}. {med.name} <span className="font-normal text-slate-600">{med.dose}</span></p>
-                                                    <p className="text-slate-600 text-[10px] ml-4">{med.frequency} • {med.duration}</p>
+                                            ) : (
+                                                <div className="space-y-0 mt-2">
+                                                    {(consultation?.medications || []).filter(m => m.name).map((med, index) => (
+                                                        <div key={index}>
+                                                            <p className="font-semibold">{index + 1}. {med.name} <span className="font-normal text-slate-600">{med.dose}</span></p>
+                                                            <p className="text-slate-600 text-[10px] ml-4">{med.frequency} • {med.duration}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
@@ -363,18 +377,17 @@ export default function PrintRecipe() {
                                 <div className="text-right space-y-0">
                                     <div><span className="text-slate-500">Fecha: </span><span className="font-semibold">
                                         {(() => {
-                                            // Priority: 1. Explicit date field (new), 2. Created date (fallback)
                                             const dateStr = consultation?.date || consultation?.created;
                                             if (!dateStr) return new Date().toLocaleDateString('es-ES');
                                             const d = new Date(dateStr);
                                             return isNaN(d.getTime()) ? new Date().toLocaleDateString('es-ES') : d.toLocaleDateString('es-ES');
                                         })()}
                                     </span></div>
-                                    <div><span className="text-slate-500">Peso: </span><span className="font-semibold">{consultation?.vitalSigns?.weight || '___'} kg</span></div>
-                                    <div><span className="text-slate-500">Talla: </span><span className="font-semibold">{consultation?.vitalSigns?.height || '___'} cm</span></div>
-                                    <div><span className="text-slate-500">T/A: </span><span className="font-semibold">{consultation?.vitalSigns?.systolic || '___'}/{consultation?.vitalSigns?.diastolic || '___'} mmHg</span></div>
-                                    <div><span className="text-slate-500">FC: </span><span className="font-semibold">{consultation?.vitalSigns?.heartRate || '___'} lpm</span></div>
-                                    <div><span className="text-slate-500">Temp: </span><span className="font-semibold">{consultation?.vitalSigns?.temperature || '___'} °C</span></div>
+                                    {consultation?.vitalSigns?.weight && <div><span className="text-slate-500">Peso: </span><span className="font-semibold">{consultation.vitalSigns.weight} kg</span></div>}
+                                    {consultation?.vitalSigns?.height && <div><span className="text-slate-500">Talla: </span><span className="font-semibold">{consultation.vitalSigns.height} cm</span></div>}
+                                    {(consultation?.vitalSigns?.systolic || consultation?.vitalSigns?.diastolic) && <div><span className="text-slate-500">T/A: </span><span className="font-semibold">{consultation.vitalSigns.systolic || ''}/{consultation.vitalSigns.diastolic || ''} mmHg</span></div>}
+                                    {consultation?.vitalSigns?.heartRate && <div><span className="text-slate-500">FC: </span><span className="font-semibold">{consultation.vitalSigns.heartRate} lpm</span></div>}
+                                    {consultation?.vitalSigns?.temperature && <div><span className="text-slate-500">Temp: </span><span className="font-semibold">{consultation.vitalSigns.temperature} °C</span></div>}
                                 </div>
                             </section>
 
@@ -396,6 +409,35 @@ export default function PrintRecipe() {
                                 <section className="text-[10px] mb-1">
                                     <span className="font-semibold text-slate-700">Dx: </span>
                                     <span className="text-slate-600">{consultation.diagnosis}</span>
+                                </section>
+                            )}
+
+                            {/* Optional: Latest Budget Table */}
+                            {latestBudget && (
+                                <section className="mt-4 border-t pt-2">
+                                    <h3 className="text-[10px] font-bold text-slate-700 mb-1 uppercase">Presupuesto / Tratamientos</h3>
+                                    <table className="w-full text-[9px]">
+                                        <thead>
+                                            <tr className="border-b text-slate-500">
+                                                <th className="text-left font-medium pb-1">Tratamiento</th>
+                                                <th className="text-right font-medium pb-1">Precio</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {latestBudget.items?.map((item, idx) => (
+                                                <tr key={idx} className="border-b border-slate-100">
+                                                    <td className="py-1">{item.name} {item.tooth ? `(Diente ${item.tooth})` : ''}</td>
+                                                    <td className="py-1 text-right">${item.price}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td className="text-right font-bold pt-1">Total:</td>
+                                                <td className="text-right font-bold pt-1">${latestBudget.total}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </section>
                             )}
 
@@ -469,6 +511,6 @@ export default function PrintRecipe() {
           }
         }
       `}</style>
-        </div>
+        </div >
     );
 }
