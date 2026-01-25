@@ -24,6 +24,7 @@ import BudgetsPage from './pages/patient-profile/BudgetsPage';
 import PrintRecipe from './pages/print/PrintRecipe';
 import PrintHistory from './pages/print/PrintHistory';
 import PrintStudyRequest from './pages/print/PrintStudyRequest';
+import PrintBudgetPlan from './pages/print/PrintBudgetPlan';
 
 // V3 Pages
 import AppointmentsPage from './pages/appointments/AppointmentsPage';
