@@ -17,12 +17,10 @@ const ZOOM_LEVELS = [1, 1.5, 2];
 
 const DEFAULT_ELEMENTS = {
     patientName: { x: 85, y: 115, width: 400, height: 25, fontSize: 11, bold: false, visible: true, label: 'Nombre del Paciente' },
-    date: { x: 50, y: 145, width: 100, height: 22, fontSize: 11, bold: false, visible: true, label: 'Fecha' },
-    patientAge: { x: 200, y: 145, width: 80, height: 22, fontSize: 11, bold: false, visible: true, label: 'Edad' },
-    weight: { x: 320, y: 145, width: 80, height: 22, fontSize: 11, bold: false, visible: true, label: 'Peso' },
-    height: { x: 430, y: 145, width: 80, height: 22, fontSize: 11, bold: false, visible: true, label: 'Talla' },
+    date: { x: 400, y: 145, width: 100, height: 22, fontSize: 11, bold: false, visible: true, label: 'Fecha' },
+    patientAge: { x: 85, y: 145, width: 80, height: 22, fontSize: 11, bold: false, visible: true, label: 'Edad' },
     medications: { x: 25, y: 180, width: 340, height: 220, fontSize: 11, bold: false, visible: true, label: 'Medicamentos' },
-    vitals: { x: 380, y: 180, width: 140, height: 120, fontSize: 10, bold: false, visible: true, label: 'Signos Vitales' },
+    budgetTable: { x: 380, y: 180, width: 140, height: 120, fontSize: 9, bold: false, visible: true, label: 'Tabla Presupuesto' },
     diagnosis: { x: 25, y: 415, width: 490, height: 60, fontSize: 10, bold: false, visible: true, label: 'Diagnostico' },
     indications: { x: 25, y: 490, width: 490, height: 80, fontSize: 10, bold: false, visible: true, label: 'Indicaciones' }
 };
@@ -31,10 +29,8 @@ const ELEMENT_COLORS = {
     patientName: '#3b82f6',
     date: '#f59e0b',
     patientAge: '#8b5cf6',
-    weight: '#22c55e',
-    height: '#14b8a6',
     medications: '#ef4444',
-    vitals: '#10b981',
+    budgetTable: '#10b981',
     diagnosis: '#06b6d4',
     indications: '#ec4899'
 };
@@ -46,10 +42,8 @@ const SAMPLE_DATA = {
     patientName: 'Juan Pérez García',
     date: '18/01/2026',
     patientAge: '45 años',
-    weight: '78 kg',
-    height: '1.75 m',
     medications: 'Paracetamol 500mg c/8hrs\nIbuprofeno 400mg c/12hrs\nOmeprazol 20mg c/24hrs',
-    vitals: 'T.A: 120/80\nF.C: 72 bpm\nTemp: 36.5°C',
+    budgetTable: 'TABLA DE PRESUPUESTO\n------------------\nResina   $500\nLimpieza $300\n------------------\nTotal:   $800',
     diagnosis: 'Faringitis aguda',
     indications: 'Reposo relativo, abundantes líquidos'
 };

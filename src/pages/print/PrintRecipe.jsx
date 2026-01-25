@@ -207,45 +207,35 @@ export default function PrintRecipe() {
                                 </div>
                             )}
 
-                            {/* Weight */}
-                            {settings.recipeLayout.elements?.weight?.visible && (
+                            {/* Budget Table (Replacing Vitals, Weight, Height) */}
+                            {settings.recipeLayout.elements?.budgetTable?.visible && latestBudget && (
                                 <div style={{
                                     position: 'absolute',
-                                    left: `${settings.recipeLayout.elements.weight.x * 0.264583}mm`,
-                                    top: `${settings.recipeLayout.elements.weight.y * 0.264583}mm`,
-                                    fontSize: `${settings.recipeLayout.elements.weight.fontSize || 11}pt`,
-                                    fontWeight: settings.recipeLayout.elements.weight.bold ? 'bold' : 'normal'
+                                    left: `${settings.recipeLayout.elements.budgetTable.x * 0.264583}mm`,
+                                    top: `${settings.recipeLayout.elements.budgetTable.y * 0.264583}mm`,
+                                    width: `${settings.recipeLayout.elements.budgetTable.width * 0.264583}mm`,
+                                    fontSize: `${settings.recipeLayout.elements.budgetTable.fontSize || 9}pt`,
+                                    fontWeight: settings.recipeLayout.elements.budgetTable.bold ? 'bold' : 'normal'
                                 }}>
-                                    {consultation?.vitalSigns?.weight || '___'} kg
-                                </div>
-                            )}
-
-                            {/* Height (Talla) */}
-                            {settings.recipeLayout.elements?.height?.visible && (
-                                <div style={{
-                                    position: 'absolute',
-                                    left: `${settings.recipeLayout.elements.height.x * 0.264583}mm`,
-                                    top: `${settings.recipeLayout.elements.height.y * 0.264583}mm`,
-                                    fontSize: `${settings.recipeLayout.elements.height.fontSize || 11}pt`,
-                                    fontWeight: settings.recipeLayout.elements.height.bold ? 'bold' : 'normal'
-                                }}>
-                                    {consultation?.vitalSigns?.height || '___'} cm
-                                </div>
-                            )}
-
-                            {/* Vital Signs */}
-                            {settings.recipeLayout.elements?.vitals?.visible && (
-                                <div style={{
-                                    position: 'absolute',
-                                    left: `${settings.recipeLayout.elements.vitals.x * 0.264583}mm`,
-                                    top: `${settings.recipeLayout.elements.vitals.y * 0.264583}mm`,
-                                    fontSize: `${settings.recipeLayout.elements.vitals.fontSize || 10}pt`,
-                                    fontWeight: settings.recipeLayout.elements.vitals.bold ? 'bold' : 'normal',
-                                    lineHeight: '1.4'
-                                }}>
-                                    <div>T/A: {consultation?.vitalSigns?.systolic || '___'}/{consultation?.vitalSigns?.diastolic || '___'} mmHg</div>
-                                    <div>FC: {consultation?.vitalSigns?.heartRate || '___'} lpm</div>
-                                    <div>Temp: {consultation?.vitalSigns?.temperature || '___'} °C</div>
+                                    <div className="border border-slate-300 rounded overflow-hidden">
+                                        <div className="bg-slate-100 text-[8px] font-bold p-1 border-b border-slate-300 uppercase">Presupuesto</div>
+                                        <table className="w-full text-[8px]">
+                                            <tbody>
+                                                {latestBudget.items?.map((item, idx) => (
+                                                    <tr key={idx} className="border-b border-slate-100 last:border-0">
+                                                        <td className="p-1">{item.name}</td>
+                                                        <td className="p-1 text-right font-semibold">${item.price}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr className="bg-slate-50">
+                                                    <td className="p-1 font-bold text-slate-500">Total</td>
+                                                    <td className="p-1 text-right font-bold">${latestBudget.total}</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
 
