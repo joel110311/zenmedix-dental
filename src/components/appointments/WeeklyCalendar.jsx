@@ -122,7 +122,10 @@ const WeeklyCalendar = ({ appointments, currentDate, onDateChange, clinics = [] 
                                 {weekDays.map(day => {
                                     const dateStr = day.toISOString().split('T')[0];
                                     const cellAppointments = appointments.filter(a => {
-                                        if (a.date !== dateStr) return false;
+                                        // Robust date comparison: handle ISO strings or space-separated dates
+                                        const aptDateStr = (a.date || '').replace(' ', 'T').split('T')[0];
+                                        if (aptDateStr !== dateStr) return false;
+
                                         if (!a.time) return false;
                                         const [h] = a.time.split(':').map(Number);
                                         return h === hour;
