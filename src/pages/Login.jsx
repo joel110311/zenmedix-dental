@@ -48,6 +48,7 @@ export default function Login() {
                     <h1 className="text-3xl font-bold">
                         <span className="text-teal-500">Zen</span>
                         <span className="text-slate-800">Medix</span>
+                        <span className="text-blue-600 ml-1">Dental</span>
                     </h1>
                 </div>
                 <p className="mt-3 text-center text-sm text-slate-600">

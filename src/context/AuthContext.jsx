@@ -6,8 +6,8 @@ import pb from '../services/pocketbase';
 
 const AuthContext = createContext(null);
 
-// Session timeout in milliseconds (15 minutes for NOM-024 compliance)
-const SESSION_TIMEOUT = 15 * 60 * 1000;
+// Session timeout in milliseconds (24 hours requested by user)
+const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 3;
 const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
 
