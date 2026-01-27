@@ -257,6 +257,7 @@ export default function NewConsultation() {
     const tabs = [
         { id: 'consulta', label: 'Consulta', icon: FileText },
         { id: 'odontograma', label: 'Odontograma', icon: Grid },
+        { id: 'periodontal', label: 'Periodontal', icon: Grid },
         { id: 'diagnostico', label: 'Diagnóstico', icon: Stethoscope },
         { id: 'tratamiento', label: 'Tratamiento', icon: Pill },
         { id: 'estudios', label: 'Estudios', icon: FlaskConical },
@@ -489,24 +490,26 @@ export default function NewConsultation() {
                 )}
 
                 {/* Odontograma Tab */}
+                {/* Odontograma Tab */}
                 {activeTab === 'odontograma' && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                        <div className="space-y-6">
-                            <Card title="Odontograma / Tratamientos">
-                                <div className="min-h-[500px]">
-                                    <PatientOdontogram
-                                        patientId={activePatient.id}
-                                        initialTreatments={initialOdontogram}
-                                        onTreatmentsChange={setOdontogramSnapshot}
-                                    />
-                                </div>
-                            </Card>
-                        </div>
+                    <div className="space-y-6">
+                        <Card title="Odontograma / Tratamientos">
+                            <div className="min-h-[500px]">
+                                <PatientOdontogram
+                                    patientId={activePatient.id}
+                                    initialTreatments={initialOdontogram}
+                                    onTreatmentsChange={setOdontogramSnapshot}
+                                />
+                            </div>
+                        </Card>
+                    </div>
+                )}
 
-                        <div className="space-y-6">
-                            {/* Periodontograma Component */}
-                            <Periodontograma patientId={activePatient.id} />
-                        </div>
+                {/* Periodontal Tab */}
+                {activeTab === 'periodontal' && (
+                    <div className="space-y-6">
+                        {/* Periodontograma Component */}
+                        <Periodontograma patientId={activePatient.id} />
                     </div>
                 )}
 

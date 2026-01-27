@@ -189,6 +189,7 @@ export default function Periodontograma({ patientId }) {
                         <p className="text-emerald-100 text-sm">Cartilla de evaluación periodontal</p>
                     </div>
                     <button
+                        type="button"
                         onClick={handleGuardar}
                         disabled={guardando || !modificado}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${modificado
@@ -207,6 +208,7 @@ export default function Periodontograma({ patientId }) {
                     <span className="text-sm font-medium text-slate-700">Vista:</span>
                     <div className="flex bg-white rounded-lg p-1 shadow-sm border border-slate-200">
                         <button
+                            type="button"
                             onClick={() => setCaraActual('vestibular')}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${caraActual === 'vestibular'
                                 ? 'bg-emerald-600 text-white shadow'
@@ -216,6 +218,7 @@ export default function Periodontograma({ patientId }) {
                             Vestibular
                         </button>
                         <button
+                            type="button"
                             onClick={() => setCaraActual('lingual')}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${caraActual === 'lingual'
                                 ? 'bg-emerald-600 text-white shadow'
@@ -352,6 +355,7 @@ export default function Periodontograma({ patientId }) {
                         </div>
 
                         <button
+                            type="button"
                             onClick={() => setDienteSeleccionado(null)}
                             className="ml-auto text-slate-500 hover:text-slate-700"
                         >

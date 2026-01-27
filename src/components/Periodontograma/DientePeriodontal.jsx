@@ -167,7 +167,7 @@ export default function DientePeriodontal({
             />
 
             {/* Visualización Anatómica de Fondo (Raíz/Corona) - Estilo sutil */}
-            <g transform={`translate(${ANCHO_DIENTE * 0.1}, ${esArriba ? 10 : 0}) scale(0.8, 1)`} opacity="0.1">
+            <g transform={`translate(${ANCHO_DIENTE * 0.1}, ${esArriba ? 10 : 0}) scale(0.8, 1)`} opacity="0.4">
                 <path
                     d={toothPath}
                     fill="#334155"
