@@ -11,9 +11,9 @@ import { getToothImage } from './teethImages';
 const ANCHO_DIENTE = 55;
 const ALTO_GRAFICO = 80;
 const ALTO_DIENTE = 40;
-// Línea 0: diferentes posiciones para maxilar y mandíbula
-const LINEA_CERO_Y_SUPERIOR = 65; // Para dientes superiores (cerca de raíces)
-const LINEA_CERO_Y_INFERIOR = 15; // Para dientes inferiores (cerca de coronas)
+// Línea 0: posición para ambos arcos
+const LINEA_CERO_Y_SUPERIOR = 50; // Para dientes superiores
+const LINEA_CERO_Y_INFERIOR = 50; // Para dientes inferiores
 const ESCALA = 4;
 
 /**
