@@ -11,8 +11,9 @@ import { getToothImage } from './teethImages';
 const ANCHO_DIENTE = 55;
 const ALTO_GRAFICO = 80;
 const ALTO_DIENTE = 40;
-// La línea 0 está en el centro del gráfico
-const LINEA_CERO_Y = 40;
+// Línea 0: diferentes posiciones para maxilar y mandíbula
+const LINEA_CERO_Y_SUPERIOR = 65; // Para dientes superiores (cerca de raíces)
+const LINEA_CERO_Y_INFERIOR = 15; // Para dientes inferiores (cerca de coronas)
 const ESCALA = 4;
 
 /**
@@ -96,21 +97,24 @@ export default function DientePeriodontal({
     const getMG = (punto) => datosCaraActual.margen_gingival[punto] || 0;
     const getPS = (punto) => datosCaraActual.profundidad_sondaje[punto] || 0;
 
+    // Línea base según arco dental
+    const lineaCeroY = esArriba ? LINEA_CERO_Y_SUPERIOR : LINEA_CERO_Y_INFERIOR;
+
     // Posición Y para MG
     const valorAY_MG = (valor) => {
         if (esArriba) {
-            return LINEA_CERO_Y - mmAPixels(valor, ESCALA);
+            return lineaCeroY - mmAPixels(valor, ESCALA);
         } else {
-            return LINEA_CERO_Y + mmAPixels(valor, ESCALA);
+            return lineaCeroY + mmAPixels(valor, ESCALA);
         }
     };
 
     // Posición Y para PS (independiente de MG)
     const valorAY_PS = (valorPS) => {
         if (esArriba) {
-            return LINEA_CERO_Y - mmAPixels(valorPS, ESCALA);
+            return lineaCeroY - mmAPixels(valorPS, ESCALA);
         } else {
-            return LINEA_CERO_Y + mmAPixels(valorPS, ESCALA);
+            return lineaCeroY + mmAPixels(valorPS, ESCALA);
         }
     };
 
@@ -211,8 +215,8 @@ export default function DientePeriodontal({
                 >
                     {/* Línea de referencia 0 */}
                     <line
-                        x1="0" y1={LINEA_CERO_Y}
-                        x2={ANCHO_DIENTE} y2={LINEA_CERO_Y}
+                        x1="0" y1={lineaCeroY}
+                        x2={ANCHO_DIENTE} y2={lineaCeroY}
                         stroke="#94a3b8"
                         strokeWidth="1"
                         strokeDasharray="3,3"
