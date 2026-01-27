@@ -11,8 +11,8 @@ import { getToothImage } from './teethImages';
 const ANCHO_DIENTE = 55;
 const ALTO_GRAFICO = 80;
 const ALTO_DIENTE = 40;
-// La línea 0 está ligeramente arriba del centro (más espacio para raíces)
-const LINEA_CERO_Y = 45;
+// La línea 0 está en el centro del gráfico
+const LINEA_CERO_Y = 40;
 const ESCALA = 4;
 
 /**
