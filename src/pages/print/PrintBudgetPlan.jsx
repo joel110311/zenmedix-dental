@@ -311,8 +311,8 @@ export default function PrintBudgetPlan() {
                         )}
                     </div>
 
-                    {/* Signature */}
-                    <div className="absolute bottom-[2cm] left-[1.5cm] right-[1.5cm]">
+                    {/* Signature - Changed from absolute to flow-based for proper page breaks */}
+                    <div className="mt-16 print-footer" style={{ pageBreakInside: 'avoid' }}>
                         <div className="flex justify-between gap-12">
                             <div className="flex-1 text-center border-t border-slate-400 pt-2">
                                 <p className="font-bold text-slate-800 text-sm">{activeDoctor?.name}</p>
@@ -334,9 +334,13 @@ export default function PrintBudgetPlan() {
 
             <style>{`
                 @media print {
-                    @page { size: letter; margin: 0; }
+                    @page { size: letter; margin: 1.5cm; }
                     body { margin: 0; padding: 0; background: white; }
                     .no-print { display: none !important; }
+                    .print-footer { page-break-inside: avoid; margin-top: 40px; }
+                    tr { page-break-inside: avoid; }
+                    thead { display: table-header-group; }
+                    tfoot { display: table-footer-group; }
                 }
             `}</style>
         </div >

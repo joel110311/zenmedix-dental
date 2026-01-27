@@ -288,39 +288,55 @@ export default function BudgetsPage() {
             </div>
 
             {/* Account Summary Card */}
-            {activePatient && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="bg-white dark:bg-slate-800">
-                        <div className="text-slate-500 text-sm font-medium">Saldo Pendiente (Deuda)</div>
-                        <div className={`text-2xl font-bold ${activePatient.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ${(activePatient.balance || 0).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                            {activePatient.balance > 0 ? 'Requiere pago' : 'Al corriente'}
-                        </div>
-                    </Card>
+            {activePatient && (() => {
+                // Calculate stats based on budget statuses
+                // Only count accepted/paid/partial budgets (not pending or rejected)
+                const activeBudgets = budgets.filter(b => ['accepted', 'paid', 'partial'].includes(b.status));
+                const totalPresupuestado = activeBudgets.reduce((sum, b) => sum + (b.total || 0), 0);
 
-                    <Card className="bg-white dark:bg-slate-800">
-                        <div className="text-slate-500 text-sm font-medium">Total Presupuestado</div>
-                        <div className="text-2xl font-bold text-slate-800 dark:text-white">
-                            ${budgets.reduce((sum, b) => sum + (b.total || 0), 0).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                            {budgets.length} presupuestos generados
-                        </div>
-                    </Card>
+                // Calculate pending debt: sum of all active budgets minus payments made
+                const totalPaid = activeBudgets.reduce((sum, b) => {
+                    const payments = b.payments || [];
+                    return sum + payments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+                }, 0);
+                const saldoPendiente = totalPresupuestado - totalPaid;
 
-                    <Card className="bg-white dark:bg-slate-800">
-                        <div className="text-slate-500 text-sm font-medium">Estado General</div>
-                        <div className="flex items-center gap-2 mt-1">
-                            {activePatient.balance > 0
-                                ? <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">Con Adeudo</span>
-                                : <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">Sin Adeudo</span>
-                            }
-                        </div>
-                    </Card>
-                </div>
-            )}
+                const acceptedCount = activeBudgets.length;
+
+                return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="bg-white dark:bg-slate-800">
+                            <div className="text-slate-500 text-sm font-medium">Saldo Pendiente (Deuda)</div>
+                            <div className={`text-2xl font-bold ${saldoPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                ${saldoPendiente.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                                {saldoPendiente > 0 ? 'Requiere pago' : 'Al corriente'}
+                            </div>
+                        </Card>
+
+                        <Card className="bg-white dark:bg-slate-800">
+                            <div className="text-slate-500 text-sm font-medium">Total Presupuestado</div>
+                            <div className="text-2xl font-bold text-slate-800 dark:text-white">
+                                ${totalPresupuestado.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                                {acceptedCount} presupuestos aceptados
+                            </div>
+                        </Card>
+
+                        <Card className="bg-white dark:bg-slate-800">
+                            <div className="text-slate-500 text-sm font-medium">Estado General</div>
+                            <div className="flex items-center gap-2 mt-1">
+                                {saldoPendiente > 0
+                                    ? <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold">Con Adeudo</span>
+                                    : <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">Sin Adeudo</span>
+                                }
+                            </div>
+                        </Card>
+                    </div>
+                );
+            })()}
 
             {showCreate ? (
                 <Card>
