@@ -12,8 +12,8 @@ import { getToothPath } from './teethPaths';
 const ANCHO_DIENTE = 70;
 const ALTO_GRAFICO = 80;
 const ALTO_DIENTE = 35;
-// La línea 0 está a 3/4 del gráfico hacia abajo
-const LINEA_CERO_Y = Math.round(ALTO_GRAFICO * 0.75); // 60px
+// La línea 0 está casi al final del área del gráfico
+const LINEA_CERO_Y = 72; // Casi al fondo del gráfico
 const ESCALA = 4;
 
 // El path SVG original tiene ancho ~40 (de X=5 a X=45) y alto ~80
