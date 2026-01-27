@@ -11,9 +11,14 @@ import { getToothPath } from './teethPaths';
 // Configuración visual
 const ANCHO_DIENTE = 70;
 const ALTO_GRAFICO = 80;
-const ALTO_DIENTE = 30;
-const LINEA_CERO_Y = 70; // Línea 0 a 7/8 del gráfico (casi al final)
+const ALTO_DIENTE = 35;
+// La línea 0 está a 3/4 del gráfico hacia abajo
+const LINEA_CERO_Y = Math.round(ALTO_GRAFICO * 0.75); // 60px
 const ESCALA = 4;
+
+// El path SVG original tiene ancho ~40 (de X=5 a X=45) y alto ~80
+const PATH_ANCHO_ORIGINAL = 40;
+const PATH_ALTO_ORIGINAL = 80;
 
 /**
  * Input numérico para mediciones periodontales
@@ -66,7 +71,6 @@ InputMedicion.propTypes = {
 
 /**
  * Componente DientePeriodontal
- * Renderiza un diente con inputs numéricos y gráfico SVG
  */
 export default function DientePeriodontal({
     numero,
@@ -93,28 +97,23 @@ export default function DientePeriodontal({
         distal: ANCHO_DIENTE - 12
     };
 
-    // Valores reales
     const getMG = (punto) => datosCaraActual.margen_gingival[punto] || 0;
     const getPS = (punto) => datosCaraActual.profundidad_sondaje[punto] || 0;
 
-    // Posición Y en el gráfico (PS es independiente, se mide desde la línea 0)
+    // Posición Y para MG
     const valorAY_MG = (valor) => {
         if (esArriba) {
-            // Maxilar: recesión (+) va hacia arriba, ganancia (-) hacia abajo
             return LINEA_CERO_Y - mmAPixels(valor, ESCALA);
         } else {
-            // Mandíbula: recesión (+) va hacia abajo, ganancia (-) hacia arriba
             return LINEA_CERO_Y + mmAPixels(valor, ESCALA);
         }
     };
 
-    // PS se dibuja desde la línea 0, NO desde MG
+    // Posición Y para PS (independiente de MG)
     const valorAY_PS = (valorPS) => {
         if (esArriba) {
-            // Maxilar: PS va hacia arriba (dentro del tejido)
             return LINEA_CERO_Y - mmAPixels(valorPS, ESCALA);
         } else {
-            // Mandíbula: PS va hacia abajo
             return LINEA_CERO_Y + mmAPixels(valorPS, ESCALA);
         }
     };
@@ -126,7 +125,7 @@ export default function DientePeriodontal({
         valor: getMG(punto)
     }));
 
-    // Puntos de PS (independientes de MG)
+    // Puntos de PS
     const puntosPS = PUNTOS.map(punto => ({
         x: posicionesX[punto],
         y: valorAY_PS(getPS(punto)),
@@ -134,13 +133,11 @@ export default function DientePeriodontal({
         esBolsa: esBolsaPatologica(getPS(punto))
     }));
 
-    // Genera path SVG para línea
     const generarPath = (puntos) => {
         if (puntos.length < 2) return '';
         return `M ${puntos[0].x} ${puntos[0].y} L ${puntos[1].x} ${puntos[1].y} L ${puntos[2].x} ${puntos[2].y}`;
     };
 
-    // Handlers
     const handleChangeMG = (punto, valor) => {
         onChange?.(numero, cara, 'margen_gingival', punto, valor);
     };
@@ -159,6 +156,18 @@ export default function DientePeriodontal({
 
     const ausente = datos?.ausente;
 
+    // Cálculo para centrar el path del diente en el gráfico
+    // Los paths originales van de X=5 a X=45 (centro en X=25)
+    // Queremos que el centro del path quede en ANCHO_DIENTE/2
+    const scaleGrafico = (ANCHO_DIENTE - 10) / PATH_ANCHO_ORIGINAL; // ~1.5
+    const offsetXGrafico = (ANCHO_DIENTE / 2) - 25 * scaleGrafico; // Centrar
+
+    // Para el icono de abajo (más pequeño)
+    const scaleIcono = 0.7;
+    const iconoAncho = PATH_ANCHO_ORIGINAL * scaleIcono;
+    const offsetXIcono = (ANCHO_DIENTE - iconoAncho) / 2 - 5 * scaleIcono;
+    const scaleYIcono = 0.35;
+
     return (
         <div
             className={`flex flex-col items-center bg-white rounded-lg border-2 transition-all cursor-pointer
@@ -167,10 +176,9 @@ export default function DientePeriodontal({
             onClick={() => onSelect?.(numero)}
             style={{ width: ANCHO_DIENTE + 8, minWidth: ANCHO_DIENTE + 8 }}
         >
-            {/* TODOS los inputs arriba (PS + MG) para ambos arcos */}
+            {/* Inputs arriba */}
             {!ausente && (
                 <div className="flex flex-col gap-0.5 py-1 px-1 w-full">
-                    {/* Fila PS (rojo) */}
                     <div className="flex justify-between w-full">
                         {PUNTOS.map(punto => (
                             <InputMedicion
@@ -180,11 +188,10 @@ export default function DientePeriodontal({
                                 min={0}
                                 max={15}
                                 color="red"
-                                label={`PS ${punto}: ${getPS(punto)}mm`}
+                                label={`PS ${punto}`}
                             />
                         ))}
                     </div>
-                    {/* Fila MG (azul) */}
                     <div className="flex justify-between w-full">
                         {PUNTOS.map(punto => (
                             <InputMedicion
@@ -194,7 +201,7 @@ export default function DientePeriodontal({
                                 min={-10}
                                 max={10}
                                 color="blue"
-                                label={`MG ${punto}: ${getMG(punto)}mm`}
+                                label={`MG ${punto}`}
                             />
                         ))}
                     </div>
@@ -208,21 +215,18 @@ export default function DientePeriodontal({
                 className="block"
                 style={{ pointerEvents: 'none' }}
             >
-                {/* Fondo */}
-                <rect
-                    x="0" y="0"
-                    width={ANCHO_DIENTE}
-                    height={ALTO_GRAFICO}
-                    fill="#ffffff"
-                />
+                <rect x="0" y="0" width={ANCHO_DIENTE} height={ALTO_GRAFICO} fill="#ffffff" />
 
-                {/* Silueta del diente de fondo */}
-                <g transform={`translate(5, ${esArriba ? 0 : 5}) scale(0.85, 0.85)`} opacity="0.2">
+                {/* Silueta del diente - CENTRADA */}
+                <g
+                    transform={`translate(${offsetXGrafico}, 0) scale(${scaleGrafico}, ${ALTO_GRAFICO / PATH_ALTO_ORIGINAL})`}
+                    opacity="0.15"
+                >
                     <path d={toothPath} fill="#475569" />
                 </g>
 
                 {/* Líneas de referencia */}
-                {[-8, -6, -4, -2, 0, 2, 4, 6, 8].map(mm => {
+                {[-8, -6, -4, -2, 0, 2, 4, 6].map(mm => {
                     const y = esArriba
                         ? LINEA_CERO_Y - mm * ESCALA
                         : LINEA_CERO_Y + mm * ESCALA;
@@ -232,8 +236,8 @@ export default function DientePeriodontal({
                             key={mm}
                             x1="0" y1={y}
                             x2={ANCHO_DIENTE} y2={y}
-                            stroke={mm === 0 ? '#64748b' : '#e2e8f0'}
-                            strokeWidth={mm === 0 ? 1.5 : 0.5}
+                            stroke={mm === 0 ? '#94a3b8' : '#e2e8f0'}
+                            strokeWidth={mm === 0 ? 2 : 0.5}
                             strokeDasharray={mm === 0 ? 'none' : '2,2'}
                         />
                     );
@@ -261,7 +265,7 @@ export default function DientePeriodontal({
                             strokeLinejoin="round"
                         />
 
-                        {/* Puntos MG (azules) */}
+                        {/* Puntos MG */}
                         {puntosMG.map((punto, idx) => (
                             <circle
                                 key={`mg-${PUNTOS[idx]}`}
@@ -274,7 +278,7 @@ export default function DientePeriodontal({
                             />
                         ))}
 
-                        {/* Puntos PS (rojos) */}
+                        {/* Puntos PS */}
                         {puntosPS.map((punto, idx) => (
                             <circle
                                 key={`ps-${PUNTOS[idx]}`}
@@ -320,7 +324,7 @@ export default function DientePeriodontal({
 
             {/* Icono del diente - CENTRADO */}
             <svg width={ANCHO_DIENTE} height={ALTO_DIENTE} className="block">
-                <g transform={`translate(${(ANCHO_DIENTE - 60) / 2}, 2) scale(0.85, 0.30)`}>
+                <g transform={`translate(${offsetXIcono}, 0) scale(${scaleIcono}, ${scaleYIcono})`}>
                     <path
                         d={toothPath}
                         fill={ausente ? '#e2e8f0' : '#f1f5f9'}
@@ -329,7 +333,7 @@ export default function DientePeriodontal({
                     />
                 </g>
                 {ausente && (
-                    <line x1="10" y1="5" x2={ANCHO_DIENTE - 10} y2={ALTO_DIENTE - 5} stroke="#94a3b8" strokeWidth="2" />
+                    <line x1="15" y1="5" x2={ANCHO_DIENTE - 15} y2={ALTO_DIENTE - 5} stroke="#94a3b8" strokeWidth="2" />
                 )}
             </svg>
 
