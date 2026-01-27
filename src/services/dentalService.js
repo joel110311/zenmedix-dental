@@ -43,6 +43,12 @@ export const dentalService = {
         });
     },
 
+    getBudget: async (id) => {
+        return await pb.collection('presupuestos').getOne(id, {
+            expand: 'patient'
+        });
+    },
+
     createBudget: async (data) => {
         return await pb.collection('presupuestos').create(data);
     },
@@ -59,6 +65,23 @@ export const dentalService = {
     // Or better, let's add a 'odontogramState' JSON field to patients collection if possible, strictly we shouldn't modify schema too much without reason.
     // Let's use a new collection `surveys` or just `consultations` json field?
     // Let's assume we save it in `consultations` of type "odontogram"? Or just in local state for now/budgets.
+
+    // Periodontograma Data
+    getPeriodontoData: async (patientId) => {
+        try {
+            const patient = await pb.collection('patients').getOne(patientId);
+            return patient.periodontograma_data || {};
+        } catch (error) {
+            console.error('Error loading periodontograma:', error);
+            return {};
+        }
+    },
+
+    updatePeriodontoData: async (patientId, data) => {
+        return await pb.collection('patients').update(patientId, {
+            periodontograma_data: data
+        });
+    },
 
     // Patient Balance Helper
     updatePatient: async (id, data) => {
