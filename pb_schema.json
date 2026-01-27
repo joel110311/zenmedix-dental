@@ -962,6 +962,12 @@
         "required": false
       },
       {
+        "id": "jsonPlan00000001",
+        "name": "plan",
+        "type": "json",
+        "required": false
+      },
+      {
         "id": "dateExpiration01",
         "name": "expirationDate",
         "type": "date",
