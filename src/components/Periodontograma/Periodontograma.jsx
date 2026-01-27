@@ -182,22 +182,22 @@ export default function Periodontograma({ patientId }) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
+            <div className="bg-white border-b border-slate-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-white">Periodontograma</h2>
-                        <p className="text-emerald-100 text-sm">Cartilla de evaluación periodontal</p>
+                        <h2 className="text-xl font-bold text-slate-800">Periodontograma</h2>
+                        <p className="text-slate-500 text-sm">Cartilla de evaluación periodontal</p>
                     </div>
                     <button
                         type="button"
                         onClick={handleGuardar}
                         disabled={guardando || !modificado}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${modificado
-                            ? 'bg-white text-emerald-700 hover:bg-emerald-50'
-                            : 'bg-emerald-500/50 text-emerald-200 cursor-not-allowed'
+                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${modificado
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                             }`}
                     >
-                        {guardando ? 'Guardando...' : 'Guardar'}
+                        {guardando ? 'Guardando...' : '✓ Guardar'}
                     </button>
                 </div>
             </div>

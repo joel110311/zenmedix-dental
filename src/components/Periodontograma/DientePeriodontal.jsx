@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
     PUNTOS,
@@ -8,50 +8,49 @@ import {
 } from './periodontogramaUtils';
 import { getToothPath } from './teethPaths';
 
-// Configuración visual mejorada
-const ANCHO_DIENTE = 60; // Más ancho para inputs
-const ALTO_INPUTS = 48;  // Área para los inputs numéricos
-const ALTO_GRAFICO = 100; // Área del gráfico más grande
-const ALTO_DIENTE = 35;  // Área del icono del diente
-const LINEA_CERO_Y = 50; // Posición de la línea 0mm (centrada)
-const ESCALA = 5; // pixels por mm (más grande para mejor visibilidad)
+// Configuración visual
+const ANCHO_DIENTE = 70;
+const ALTO_GRAFICO = 80;
+const ALTO_DIENTE = 30;
+const LINEA_CERO_Y = 60; // Línea 0 más abajo (3/4 del gráfico)
+const ESCALA = 4;
 
 /**
- * Input numérico pequeño para mediciones periodontales
+ * Input numérico para mediciones periodontales
  */
 function InputMedicion({ valor, onChange, min, max, color, label }) {
     const handleChange = (e) => {
-        const newValue = parseInt(e.target.value) || 0;
-        const clampedValue = Math.max(min, Math.min(max, newValue));
-        onChange(clampedValue);
+        const newValue = parseInt(e.target.value);
+        if (!isNaN(newValue)) {
+            const clampedValue = Math.max(min, Math.min(max, newValue));
+            onChange(clampedValue);
+        }
     };
 
-    const handleWheel = (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -1 : 1;
-        const newValue = Math.max(min, Math.min(max, valor + delta));
-        onChange(newValue);
+    const handleKeyDown = (e) => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            onChange(Math.min(max, valor + 1));
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            onChange(Math.max(min, valor - 1));
+        }
     };
+
+    const colorClasses = color === 'blue'
+        ? 'border-blue-400 text-blue-600 focus:border-blue-500 focus:ring-blue-200'
+        : 'border-red-400 text-red-600 focus:border-red-500 focus:ring-red-200';
 
     return (
         <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={valor}
             onChange={handleChange}
-            onWheel={handleWheel}
-            min={min}
-            max={max}
+            onKeyDown={handleKeyDown}
             title={label}
-            className={`w-5 h-5 text-[10px] text-center border rounded font-bold p-0 
-                focus:outline-none focus:ring-1 focus:ring-offset-0
-                ${color === 'blue'
-                    ? 'border-blue-400 text-blue-700 focus:ring-blue-400 bg-blue-50'
-                    : 'border-red-400 text-red-700 focus:ring-red-400 bg-red-50'
-                }`}
-            style={{
-                MozAppearance: 'textfield',
-                WebkitAppearance: 'none'
-            }}
+            className={`w-6 h-6 text-xs text-center border-2 rounded font-bold bg-white
+                focus:outline-none focus:ring-2 ${colorClasses}`}
         />
     );
 }
@@ -66,8 +65,8 @@ InputMedicion.propTypes = {
 };
 
 /**
- * Componente DientePeriodontal Mejorado
- * Renderiza un diente individual con inputs numéricos y gráfico SVG
+ * Componente DientePeriodontal
+ * Renderiza un diente con inputs numéricos y gráfico SVG
  */
 export default function DientePeriodontal({
     numero,
@@ -87,60 +86,61 @@ export default function DientePeriodontal({
     const esArriba = esMaxilar(numero);
     const toothPath = getToothPath(numero);
 
-    // Posiciones X de los puntos (mesial, central, distal)
+    // Posiciones X de los puntos
     const posicionesX = {
-        mesial: 10,
+        mesial: 12,
         central: ANCHO_DIENTE / 2,
-        distal: ANCHO_DIENTE - 10
+        distal: ANCHO_DIENTE - 12
     };
 
-    // Convierte valor de medición a posición Y en el gráfico
-    const valorAY = (valor) => {
+    // Valores reales
+    const getMG = (punto) => datosCaraActual.margen_gingival[punto] || 0;
+    const getPS = (punto) => datosCaraActual.profundidad_sondaje[punto] || 0;
+
+    // Posición Y en el gráfico (PS es independiente, se mide desde la línea 0)
+    const valorAY_MG = (valor) => {
         if (esArriba) {
+            // Maxilar: recesión (+) va hacia arriba, ganancia (-) hacia abajo
             return LINEA_CERO_Y - mmAPixels(valor, ESCALA);
         } else {
+            // Mandíbula: recesión (+) va hacia abajo, ganancia (-) hacia arriba
             return LINEA_CERO_Y + mmAPixels(valor, ESCALA);
         }
     };
 
-    // Calcula posiciones de los puntos MG
+    // PS se dibuja desde la línea 0, NO desde MG
+    const valorAY_PS = (valorPS) => {
+        if (esArriba) {
+            // Maxilar: PS va hacia arriba (dentro del tejido)
+            return LINEA_CERO_Y - mmAPixels(valorPS, ESCALA);
+        } else {
+            // Mandíbula: PS va hacia abajo
+            return LINEA_CERO_Y + mmAPixels(valorPS, ESCALA);
+        }
+    };
+
+    // Puntos de MG
     const puntosMG = PUNTOS.map(punto => ({
         x: posicionesX[punto],
-        y: valorAY(datosCaraActual.margen_gingival[punto]),
-        valor: datosCaraActual.margen_gingival[punto]
+        y: valorAY_MG(getMG(punto)),
+        valor: getMG(punto)
     }));
 
-    // Calcula posiciones de los puntos PS (desde el MG hacia adentro)
-    const puntosPS = PUNTOS.map((punto, idx) => {
-        const mg = datosCaraActual.margen_gingival[punto];
-        const ps = datosCaraActual.profundidad_sondaje[punto];
-        const yMg = puntosMG[idx].y;
-        const yPs = esArriba ? yMg - mmAPixels(ps, ESCALA) : yMg + mmAPixels(ps, ESCALA);
-        return {
-            x: posicionesX[punto],
-            y: yPs,
-            valor: ps,
-            esBolsa: esBolsaPatologica(ps)
-        };
-    });
+    // Puntos de PS (independientes de MG)
+    const puntosPS = PUNTOS.map(punto => ({
+        x: posicionesX[punto],
+        y: valorAY_PS(getPS(punto)),
+        valor: getPS(punto),
+        esBolsa: esBolsaPatologica(getPS(punto))
+    }));
 
-    // Genera path para línea entre puntos
+    // Genera path SVG para línea
     const generarPath = (puntos) => {
         if (puntos.length < 2) return '';
         return `M ${puntos[0].x} ${puntos[0].y} L ${puntos[1].x} ${puntos[1].y} L ${puntos[2].x} ${puntos[2].y}`;
     };
 
-    // Genera path para área de bolsa patológica
-    const generarAreaBolsa = () => {
-        const tieneBolsa = puntosPS.some(p => p.esBolsa);
-        if (!tieneBolsa) return '';
-
-        const todosLosPuntos = [...puntosMG, ...puntosPS.slice().reverse()];
-        return `M ${todosLosPuntos[0].x} ${todosLosPuntos[0].y} ` +
-            todosLosPuntos.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ') + ' Z';
-    };
-
-    // Handlers de cambio
+    // Handlers
     const handleChangeMG = (punto, valor) => {
         onChange?.(numero, cara, 'margen_gingival', punto, valor);
     };
@@ -161,43 +161,43 @@ export default function DientePeriodontal({
 
     return (
         <div
-            className={`flex flex-col items-center bg-white rounded-lg border transition-all
-                ${seleccionado ? 'ring-2 ring-blue-500 border-blue-300' : 'border-slate-200 hover:border-slate-300'}
-                ${ausente ? 'opacity-50' : ''}`}
+            className={`flex flex-col items-center bg-white rounded-lg border-2 transition-all cursor-pointer
+                ${seleccionado ? 'border-blue-500 shadow-lg' : 'border-slate-200 hover:border-slate-300'} 
+                ${ausente ? 'opacity-40' : ''}`}
             onClick={() => onSelect?.(numero)}
-            style={{ width: ANCHO_DIENTE + 4 }}
+            style={{ width: ANCHO_DIENTE + 8, minWidth: ANCHO_DIENTE + 8 }}
         >
-            {/* Inputs PS (arriba para maxilar, abajo para mandíbula) */}
-            {esArriba && !ausente && (
-                <div className="flex justify-between w-full px-0.5 py-1 bg-red-50/50 rounded-t-lg">
-                    {PUNTOS.map(punto => (
-                        <InputMedicion
-                            key={`ps-${punto}`}
-                            valor={datosCaraActual.profundidad_sondaje[punto]}
-                            onChange={(v) => handleChangePS(punto, v)}
-                            min={0}
-                            max={15}
-                            color="red"
-                            label={`PS ${punto}`}
-                        />
-                    ))}
-                </div>
-            )}
-
-            {/* Inputs MG */}
+            {/* TODOS los inputs arriba (PS + MG) para ambos arcos */}
             {!ausente && (
-                <div className="flex justify-between w-full px-0.5 py-1 bg-blue-50/50">
-                    {PUNTOS.map(punto => (
-                        <InputMedicion
-                            key={`mg-${punto}`}
-                            valor={datosCaraActual.margen_gingival[punto]}
-                            onChange={(v) => handleChangeMG(punto, v)}
-                            min={-10}
-                            max={10}
-                            color="blue"
-                            label={`MG ${punto}`}
-                        />
-                    ))}
+                <div className="flex flex-col gap-0.5 py-1 px-1 w-full">
+                    {/* Fila PS (rojo) */}
+                    <div className="flex justify-between w-full">
+                        {PUNTOS.map(punto => (
+                            <InputMedicion
+                                key={`ps-${punto}`}
+                                valor={getPS(punto)}
+                                onChange={(v) => handleChangePS(punto, v)}
+                                min={0}
+                                max={15}
+                                color="red"
+                                label={`PS ${punto}: ${getPS(punto)}mm`}
+                            />
+                        ))}
+                    </div>
+                    {/* Fila MG (azul) */}
+                    <div className="flex justify-between w-full">
+                        {PUNTOS.map(punto => (
+                            <InputMedicion
+                                key={`mg-${punto}`}
+                                valor={getMG(punto)}
+                                onChange={(v) => handleChangeMG(punto, v)}
+                                min={-10}
+                                max={10}
+                                color="blue"
+                                label={`MG ${punto}: ${getMG(punto)}mm`}
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -206,50 +206,41 @@ export default function DientePeriodontal({
                 width={ANCHO_DIENTE}
                 height={ALTO_GRAFICO}
                 className="block"
+                style={{ pointerEvents: 'none' }}
             >
-                {/* Fondo con pointer-events desactivados */}
-                <g pointerEvents="none">
-                    {/* Fondo blanco */}
-                    <rect
-                        x="0" y="0"
-                        width={ANCHO_DIENTE}
-                        height={ALTO_GRAFICO}
-                        fill={ausente ? '#f9fafb' : '#ffffff'}
-                    />
+                {/* Fondo */}
+                <rect
+                    x="0" y="0"
+                    width={ANCHO_DIENTE}
+                    height={ALTO_GRAFICO}
+                    fill="#ffffff"
+                />
 
-                    {/* Forma anatómica de fondo */}
-                    <g transform={`translate(${ANCHO_DIENTE * 0.05}, ${esArriba ? 5 : 0}) scale(0.9, 0.9)`} opacity="0.15">
-                        <path d={toothPath} fill="#475569" />
-                    </g>
-
-                    {/* Líneas de cuadrícula */}
-                    {[-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10].map(mm => {
-                        const y = valorAY(mm);
-                        if (y < 0 || y > ALTO_GRAFICO) return null;
-                        const isZero = mm === 0;
-                        return (
-                            <line
-                                key={mm}
-                                x1="0" y1={y}
-                                x2={ANCHO_DIENTE} y2={y}
-                                stroke={isZero ? '#64748b' : '#e2e8f0'}
-                                strokeWidth={isZero ? 1.5 : 0.5}
-                                strokeDasharray={isZero ? 'none' : '3,3'}
-                            />
-                        );
-                    })}
+                {/* Silueta del diente de fondo */}
+                <g transform={`translate(5, ${esArriba ? 0 : 5}) scale(0.85, 0.85)`} opacity="0.2">
+                    <path d={toothPath} fill="#475569" />
                 </g>
+
+                {/* Líneas de referencia */}
+                {[-8, -6, -4, -2, 0, 2, 4, 6, 8].map(mm => {
+                    const y = esArriba
+                        ? LINEA_CERO_Y - mm * ESCALA
+                        : LINEA_CERO_Y + mm * ESCALA;
+                    if (y < 2 || y > ALTO_GRAFICO - 2) return null;
+                    return (
+                        <line
+                            key={mm}
+                            x1="0" y1={y}
+                            x2={ANCHO_DIENTE} y2={y}
+                            stroke={mm === 0 ? '#64748b' : '#e2e8f0'}
+                            strokeWidth={mm === 0 ? 1.5 : 0.5}
+                            strokeDasharray={mm === 0 ? 'none' : '2,2'}
+                        />
+                    );
+                })}
 
                 {!ausente && (
                     <>
-                        {/* Área de bolsa patológica */}
-                        <path
-                            d={generarAreaBolsa()}
-                            fill="rgba(239, 68, 68, 0.15)"
-                            stroke="none"
-                            pointerEvents="none"
-                        />
-
                         {/* Línea MG (azul) */}
                         <path
                             d={generarPath(puntosMG)}
@@ -258,7 +249,6 @@ export default function DientePeriodontal({
                             fill="none"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            pointerEvents="none"
                         />
 
                         {/* Línea PS (roja) */}
@@ -269,83 +259,59 @@ export default function DientePeriodontal({
                             fill="none"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            pointerEvents="none"
                         />
 
-                        {/* Puntos MG (azules) - más grandes y visibles */}
+                        {/* Puntos MG (azules) */}
                         {puntosMG.map((punto, idx) => (
                             <circle
                                 key={`mg-${PUNTOS[idx]}`}
                                 cx={punto.x}
                                 cy={punto.y}
-                                r="6"
+                                r="5"
                                 fill="#3b82f6"
-                                stroke="#ffffff"
+                                stroke="#fff"
                                 strokeWidth="2"
-                            >
-                                <title>MG {PUNTOS[idx]}: {punto.valor}mm</title>
-                            </circle>
+                            />
                         ))}
 
-                        {/* Puntos PS (rojos) - más grandes y visibles */}
+                        {/* Puntos PS (rojos) */}
                         {puntosPS.map((punto, idx) => (
                             <circle
                                 key={`ps-${PUNTOS[idx]}`}
                                 cx={punto.x}
                                 cy={punto.y}
-                                r="6"
+                                r="5"
                                 fill={punto.esBolsa ? '#dc2626' : '#ef4444'}
-                                stroke="#ffffff"
+                                stroke="#fff"
                                 strokeWidth="2"
-                            >
-                                <title>PS {PUNTOS[idx]}: {punto.valor}mm</title>
-                            </circle>
+                            />
                         ))}
                     </>
                 )}
             </svg>
 
-            {/* Inputs PS (abajo para mandíbula) */}
-            {!esArriba && !ausente && (
-                <div className="flex justify-between w-full px-0.5 py-1 bg-red-50/50">
-                    {PUNTOS.map(punto => (
-                        <InputMedicion
-                            key={`ps-${punto}`}
-                            valor={datosCaraActual.profundidad_sondaje[punto]}
-                            onChange={(v) => handleChangePS(punto, v)}
-                            min={0}
-                            max={15}
-                            color="red"
-                            label={`PS ${punto}`}
-                        />
-                    ))}
-                </div>
-            )}
-
             {/* Indicadores de sangrado y placa */}
             {!ausente && (
-                <div className="flex justify-between w-full px-1 py-0.5 gap-0.5">
+                <div className="flex justify-between w-full px-1.5 py-0.5">
                     {PUNTOS.map(punto => (
                         <div key={punto} className="flex flex-col items-center gap-0.5">
-                            {/* Toggle Sangrado */}
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleToggleSangrado(punto); }}
-                                className={`w-3 h-3 rounded-full border transition-colors
+                                className={`w-3 h-3 rounded-full border-2 transition-colors
                                     ${datosCaraActual.sangrado[punto]
                                         ? 'bg-red-500 border-red-600'
-                                        : 'bg-white border-slate-300 hover:border-red-300'}`}
-                                title={`Sangrado ${punto}: ${datosCaraActual.sangrado[punto] ? 'Sí' : 'No'}`}
+                                        : 'bg-white border-slate-300 hover:border-red-400'}`}
+                                title={`Sangrado ${punto}`}
                             />
-                            {/* Toggle Placa */}
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleTogglePlaca(punto); }}
-                                className={`w-3 h-3 rounded-sm border transition-colors
+                                className={`w-3 h-3 rounded-sm border-2 transition-colors
                                     ${datosCaraActual.placa[punto]
                                         ? 'bg-amber-400 border-amber-500'
-                                        : 'bg-white border-slate-300 hover:border-amber-300'}`}
-                                title={`Placa ${punto}: ${datosCaraActual.placa[punto] ? 'Sí' : 'No'}`}
+                                        : 'bg-white border-slate-300 hover:border-amber-400'}`}
+                                title={`Placa ${punto}`}
                             />
                         </div>
                     ))}
@@ -354,7 +320,7 @@ export default function DientePeriodontal({
 
             {/* Icono del diente */}
             <svg width={ANCHO_DIENTE} height={ALTO_DIENTE} className="block">
-                <g transform={`translate(${ANCHO_DIENTE * 0.05}, 0) scale(0.9, 0.35)`}>
+                <g transform={`translate(5, 0) scale(0.85, 0.35)`}>
                     <path
                         d={toothPath}
                         fill={ausente ? '#e2e8f0' : '#f1f5f9'}
@@ -363,12 +329,7 @@ export default function DientePeriodontal({
                     />
                 </g>
                 {ausente && (
-                    <line
-                        x1="10" y1="5"
-                        x2={ANCHO_DIENTE - 10} y2={ALTO_DIENTE - 5}
-                        stroke="#94a3b8"
-                        strokeWidth="2"
-                    />
+                    <line x1="10" y1="5" x2={ANCHO_DIENTE - 10} y2={ALTO_DIENTE - 5} stroke="#94a3b8" strokeWidth="2" />
                 )}
             </svg>
 
