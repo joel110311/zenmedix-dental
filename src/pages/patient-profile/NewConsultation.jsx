@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Save, Plus, Trash2, FileText, Stethoscope, Pill, FlaskConical, AlertTriangle, User, Phone, Calendar, Heart, Search, ChevronDown, ChevronUp, ClipboardList, Grid } from 'lucide-react';
 import PatientOdontogram from '../../components/PatientOdontogram';
+import Periodontograma from '../../components/Periodontograma/Periodontograma';
 import { api } from '../../services/api';
 import { usePatient } from '../../context/PatientContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -489,16 +490,23 @@ export default function NewConsultation() {
 
                 {/* Odontograma Tab */}
                 {activeTab === 'odontograma' && (
-                    <div className="space-y-6">
-                        <Card title="Odontograma / Estado Dental">
-                            <div className="min-h-[500px]">
-                                <PatientOdontogram
-                                    patientId={activePatient.id}
-                                    initialTreatments={initialOdontogram}
-                                    onTreatmentsChange={setOdontogramSnapshot}
-                                />
-                            </div>
-                        </Card>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                        <div className="space-y-6">
+                            <Card title="Odontograma / Tratamientos">
+                                <div className="min-h-[500px]">
+                                    <PatientOdontogram
+                                        patientId={activePatient.id}
+                                        initialTreatments={initialOdontogram}
+                                        onTreatmentsChange={setOdontogramSnapshot}
+                                    />
+                                </div>
+                            </Card>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Periodontograma Component */}
+                            <Periodontograma patientId={activePatient.id} />
+                        </div>
                     </div>
                 )}
 

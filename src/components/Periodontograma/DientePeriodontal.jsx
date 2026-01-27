@@ -9,6 +9,7 @@ import {
     ciclarPS,
     esMaxilar
 } from './periodontogramaUtils';
+import { getToothPath } from './teethPaths';
 
 // Configuración visual
 const ANCHO_DIENTE = 50;
@@ -39,6 +40,7 @@ export default function DientePeriodontal({
     };
 
     const esArriba = esMaxilar(numero);
+    const toothPath = getToothPath(numero); // Obtener ruta SVG específica
 
     // Posiciones X de los puntos (mesial, central, distal)
     const posicionesX = {
@@ -159,11 +161,18 @@ export default function DientePeriodontal({
             <rect
                 x="0" y="0"
                 width={ANCHO_DIENTE}
-                height={ALTO_GRAFICO}
+                height={ALTO_GRAFICO + ALTO_DIENTE + 5}
                 fill={ausente ? '#f3f4f6' : '#ffffff'}
-                stroke="#e5e7eb"
-                strokeWidth="1"
+                rx="4"
             />
+
+            {/* Visualización Anatómica de Fondo (Raíz/Corona) - Estilo sutil */}
+            <g transform={`translate(${ANCHO_DIENTE * 0.1}, ${esArriba ? 10 : 0}) scale(0.8, 1)`} opacity="0.1">
+                <path
+                    d={toothPath}
+                    fill="#334155"
+                />
+            </g>
 
             {/* Líneas de cuadrícula (cada 2mm) */}
             {[...Array(8)].map((_, i) => {
@@ -305,17 +314,15 @@ export default function DientePeriodontal({
                 {numero}
             </text>
 
-            {/* Icono del diente simplificado */}
-            <rect
-                x="10"
-                y={ALTO_GRAFICO + 18}
-                width={ANCHO_DIENTE - 20}
-                height={ALTO_DIENTE - 10}
-                rx="3"
-                fill={ausente ? '#d1d5db' : '#f1f5f9'}
-                stroke={ausente ? '#9ca3af' : '#64748b'}
-                strokeWidth="1"
-            />
+            {/* Icono del diente anatómico */}
+            <g transform={`translate(0, ${ALTO_GRAFICO + 5}) scale(1, 0.4)`}>
+                <path
+                    d={toothPath}
+                    fill={ausente ? '#cbd5e1' : '#f1f5f9'}
+                    stroke={ausente ? '#9ca3af' : '#64748b'}
+                    strokeWidth="1.5"
+                />
+            </g>
 
             {ausente && (
                 <line
