@@ -12,7 +12,7 @@ import { getToothPath } from './teethPaths';
 const ANCHO_DIENTE = 70;
 const ALTO_GRAFICO = 80;
 const ALTO_DIENTE = 30;
-const LINEA_CERO_Y = 60; // Línea 0 más abajo (3/4 del gráfico)
+const LINEA_CERO_Y = 70; // Línea 0 a 7/8 del gráfico (casi al final)
 const ESCALA = 4;
 
 /**
@@ -318,9 +318,9 @@ export default function DientePeriodontal({
                 </div>
             )}
 
-            {/* Icono del diente */}
+            {/* Icono del diente - CENTRADO */}
             <svg width={ANCHO_DIENTE} height={ALTO_DIENTE} className="block">
-                <g transform={`translate(5, 0) scale(0.85, 0.35)`}>
+                <g transform={`translate(${(ANCHO_DIENTE - 60) / 2}, 2) scale(0.85, 0.30)`}>
                     <path
                         d={toothPath}
                         fill={ausente ? '#e2e8f0' : '#f1f5f9'}

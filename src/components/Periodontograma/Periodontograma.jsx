@@ -211,7 +211,7 @@ export default function Periodontograma({ patientId }) {
                             type="button"
                             onClick={() => setCaraActual('vestibular')}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${caraActual === 'vestibular'
-                                ? 'bg-emerald-600 text-white shadow'
+                                ? 'bg-blue-600 text-white shadow'
                                 : 'text-slate-600 hover:text-slate-900'
                                 }`}
                         >
@@ -221,7 +221,7 @@ export default function Periodontograma({ patientId }) {
                             type="button"
                             onClick={() => setCaraActual('lingual')}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${caraActual === 'lingual'
-                                ? 'bg-emerald-600 text-white shadow'
+                                ? 'bg-blue-600 text-white shadow'
                                 : 'text-slate-600 hover:text-slate-900'
                                 }`}
                         >
@@ -256,19 +256,19 @@ export default function Periodontograma({ patientId }) {
                 <div className="flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-2">
                         <span className="font-medium text-slate-600">Sangrado:</span>
-                        <span className={`font-bold ${stats.porcSangrado > 20 ? 'text-red-600' : 'text-green-600'}`}>
+                        <span className={`font-bold ${stats.porcSangrado > 20 ? 'text-red-600' : 'text-blue-600'}`}>
                             {stats.porcSangrado}%
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="font-medium text-slate-600">Placa:</span>
-                        <span className={`font-bold ${stats.porcPlaca > 20 ? 'text-amber-600' : 'text-green-600'}`}>
+                        <span className={`font-bold ${stats.porcPlaca > 20 ? 'text-amber-600' : 'text-blue-600'}`}>
                             {stats.porcPlaca}%
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="font-medium text-slate-600">Bolsas &gt;3mm:</span>
-                        <span className={`font-bold ${stats.porcBolsas > 10 ? 'text-red-600' : 'text-green-600'}`}>
+                        <span className={`font-bold ${stats.porcBolsas > 10 ? 'text-red-600' : 'text-blue-600'}`}>
                             {stats.porcBolsas}%
                         </span>
                     </div>
@@ -326,7 +326,7 @@ export default function Periodontograma({ patientId }) {
                                 type="checkbox"
                                 checked={datos[dienteSeleccionado]?.ausente || false}
                                 onChange={() => handleToggleAusente(dienteSeleccionado)}
-                                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                             />
                         </div>
 
@@ -335,7 +335,7 @@ export default function Periodontograma({ patientId }) {
                             <select
                                 value={datos[dienteSeleccionado]?.movilidad || 0}
                                 onChange={(e) => handleCambiarMovilidad(dienteSeleccionado, parseInt(e.target.value))}
-                                className="px-2 py-1 rounded border border-slate-300 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                                className="px-2 py-1 rounded border border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500"
                             >
                                 <option value={0}>0 - Normal</option>
                                 <option value={1}>1 - Leve</option>
@@ -349,7 +349,7 @@ export default function Periodontograma({ patientId }) {
                             <select
                                 value={datos[dienteSeleccionado]?.furcacion || 0}
                                 onChange={(e) => handleCambiarFurcacion(dienteSeleccionado, parseInt(e.target.value))}
-                                className="px-2 py-1 rounded border border-slate-300 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                                className="px-2 py-1 rounded border border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500"
                             >
                                 <option value={0}>0 - Sin lesión</option>
                                 <option value={1}>Grado I</option>
