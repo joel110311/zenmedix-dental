@@ -1,26 +1,73 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
     PUNTOS,
     mmAPixels,
     esBolsaPatologica,
-    calcularNIC,
-    ciclarMG,
-    ciclarPS,
     esMaxilar
 } from './periodontogramaUtils';
 import { getToothPath } from './teethPaths';
 
-// Configuración visual
-const ANCHO_DIENTE = 50;
-const ALTO_GRAFICO = 80; // Área del gráfico de líneas
-const ALTO_DIENTE = 30;  // Área del icono del diente
-const LINEA_CERO_Y = 40; // Posición de la línea 0mm
-const ESCALA = 4; // pixels por mm
+// Configuración visual mejorada
+const ANCHO_DIENTE = 60; // Más ancho para inputs
+const ALTO_INPUTS = 48;  // Área para los inputs numéricos
+const ALTO_GRAFICO = 100; // Área del gráfico más grande
+const ALTO_DIENTE = 35;  // Área del icono del diente
+const LINEA_CERO_Y = 50; // Posición de la línea 0mm (centrada)
+const ESCALA = 5; // pixels por mm (más grande para mejor visibilidad)
 
 /**
- * Componente DientePeriodontal
- * Renderiza un diente individual con sus mediciones periodontales en SVG
+ * Input numérico pequeño para mediciones periodontales
+ */
+function InputMedicion({ valor, onChange, min, max, color, label }) {
+    const handleChange = (e) => {
+        const newValue = parseInt(e.target.value) || 0;
+        const clampedValue = Math.max(min, Math.min(max, newValue));
+        onChange(clampedValue);
+    };
+
+    const handleWheel = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -1 : 1;
+        const newValue = Math.max(min, Math.min(max, valor + delta));
+        onChange(newValue);
+    };
+
+    return (
+        <input
+            type="number"
+            value={valor}
+            onChange={handleChange}
+            onWheel={handleWheel}
+            min={min}
+            max={max}
+            title={label}
+            className={`w-5 h-5 text-[10px] text-center border rounded font-bold p-0 
+                focus:outline-none focus:ring-1 focus:ring-offset-0
+                ${color === 'blue'
+                    ? 'border-blue-400 text-blue-700 focus:ring-blue-400 bg-blue-50'
+                    : 'border-red-400 text-red-700 focus:ring-red-400 bg-red-50'
+                }`}
+            style={{
+                MozAppearance: 'textfield',
+                WebkitAppearance: 'none'
+            }}
+        />
+    );
+}
+
+InputMedicion.propTypes = {
+    valor: PropTypes.number.isRequired,
+    onChange: PropTypes.func.isRequired,
+    min: PropTypes.number,
+    max: PropTypes.number,
+    color: PropTypes.oneOf(['blue', 'red']),
+    label: PropTypes.string
+};
+
+/**
+ * Componente DientePeriodontal Mejorado
+ * Renderiza un diente individual con inputs numéricos y gráfico SVG
  */
 export default function DientePeriodontal({
     numero,
@@ -30,8 +77,6 @@ export default function DientePeriodontal({
     seleccionado = false,
     onSelect
 }) {
-    const [modoEdicion, setModoEdicion] = useState(null); // 'mg' | 'ps' | null
-
     const datosCaraActual = datos?.[cara] || {
         margen_gingival: { mesial: 0, central: 0, distal: 0 },
         profundidad_sondaje: { mesial: 0, central: 0, distal: 0 },
@@ -40,46 +85,35 @@ export default function DientePeriodontal({
     };
 
     const esArriba = esMaxilar(numero);
-    const toothPath = getToothPath(numero); // Obtener ruta SVG específica
+    const toothPath = getToothPath(numero);
 
     // Posiciones X de los puntos (mesial, central, distal)
     const posicionesX = {
-        mesial: 8,
+        mesial: 10,
         central: ANCHO_DIENTE / 2,
-        distal: ANCHO_DIENTE - 8
+        distal: ANCHO_DIENTE - 10
     };
 
     // Convierte valor de medición a posición Y en el gráfico
-    const valorAY = (valor, tipo) => {
+    const valorAY = (valor) => {
         if (esArriba) {
-            // Maxilar: 0 está abajo, valores positivos suben
-            if (tipo === 'mg') {
-                return LINEA_CERO_Y - mmAPixels(valor, ESCALA);
-            }
-            // PS: se mide desde el margen gingival hacia arriba
             return LINEA_CERO_Y - mmAPixels(valor, ESCALA);
         } else {
-            // Mandíbula: 0 está arriba, valores positivos bajan
-            if (tipo === 'mg') {
-                return LINEA_CERO_Y + mmAPixels(valor, ESCALA);
-            }
             return LINEA_CERO_Y + mmAPixels(valor, ESCALA);
         }
     };
 
-    // Genera puntos para la línea del Margen Gingival (azul)
+    // Calcula posiciones de los puntos MG
     const puntosMG = PUNTOS.map(punto => ({
         x: posicionesX[punto],
-        y: valorAY(datosCaraActual.margen_gingival[punto], 'mg'),
+        y: valorAY(datosCaraActual.margen_gingival[punto]),
         valor: datosCaraActual.margen_gingival[punto]
     }));
 
-    // Genera puntos para la línea de Profundidad de Sondaje (roja)
-    // PS se mide desde el MG, así que la posición es MG + PS
+    // Calcula posiciones de los puntos PS (desde el MG hacia adentro)
     const puntosPS = PUNTOS.map((punto, idx) => {
         const mg = datosCaraActual.margen_gingival[punto];
         const ps = datosCaraActual.profundidad_sondaje[punto];
-        // La línea roja va desde el margen gingival hacia adentro del tejido
         const yMg = puntosMG[idx].y;
         const yPs = esArriba ? yMg - mmAPixels(ps, ESCALA) : yMg + mmAPixels(ps, ESCALA);
         return {
@@ -90,33 +124,7 @@ export default function DientePeriodontal({
         };
     });
 
-    // Maneja click en punto de medición
-    const handleClickPunto = (punto, tipo, e) => {
-        e.stopPropagation();
-        const incrementar = e.button !== 2; // Click derecho decrementa
-
-        if (tipo === 'mg') {
-            const nuevoValor = ciclarMG(datosCaraActual.margen_gingival[punto], incrementar);
-            onChange?.(numero, cara, 'margen_gingival', punto, nuevoValor);
-        } else {
-            const nuevoValor = ciclarPS(datosCaraActual.profundidad_sondaje[punto], incrementar);
-            onChange?.(numero, cara, 'profundidad_sondaje', punto, nuevoValor);
-        }
-    };
-
-    // Toggle sangrado
-    const handleToggleSangrado = (punto, e) => {
-        e.stopPropagation();
-        onChange?.(numero, cara, 'sangrado', punto, !datosCaraActual.sangrado[punto]);
-    };
-
-    // Toggle placa
-    const handleTogglePlaca = (punto, e) => {
-        e.stopPropagation();
-        onChange?.(numero, cara, 'placa', punto, !datosCaraActual.placa[punto]);
-    };
-
-    // Genera path para línea suave entre puntos
+    // Genera path para línea entre puntos
     const generarPath = (puntos) => {
         if (puntos.length < 2) return '';
         return `M ${puntos[0].x} ${puntos[0].y} L ${puntos[1].x} ${puntos[1].y} L ${puntos[2].x} ${puntos[2].y}`;
@@ -124,215 +132,251 @@ export default function DientePeriodontal({
 
     // Genera path para área de bolsa patológica
     const generarAreaBolsa = () => {
-        const areas = [];
-        for (let i = 0; i < PUNTOS.length; i++) {
-            if (puntosPS[i].esBolsa) {
-                areas.push({
-                    mg: puntosMG[i],
-                    ps: puntosPS[i]
-                });
-            }
-        }
-        if (areas.length === 0) return null;
+        const tieneBolsa = puntosPS.some(p => p.esBolsa);
+        if (!tieneBolsa) return '';
 
-        // Crear polígono entre MG y PS donde hay bolsa
-        const pathPoints = [];
-        const psMayorA3 = puntosPS.filter(p => p.esBolsa);
-        if (psMayorA3.length === 0) return null;
-
-        // Encontrar el área cerrada entre las líneas
-        // Simplificación: área entre todos los puntos donde PS > 3
         const todosLosPuntos = [...puntosMG, ...puntosPS.slice().reverse()];
         return `M ${todosLosPuntos[0].x} ${todosLosPuntos[0].y} ` +
             todosLosPuntos.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ') + ' Z';
     };
 
+    // Handlers de cambio
+    const handleChangeMG = (punto, valor) => {
+        onChange?.(numero, cara, 'margen_gingival', punto, valor);
+    };
+
+    const handleChangePS = (punto, valor) => {
+        onChange?.(numero, cara, 'profundidad_sondaje', punto, valor);
+    };
+
+    const handleToggleSangrado = (punto) => {
+        onChange?.(numero, cara, 'sangrado', punto, !datosCaraActual.sangrado[punto]);
+    };
+
+    const handleTogglePlaca = (punto) => {
+        onChange?.(numero, cara, 'placa', punto, !datosCaraActual.placa[punto]);
+    };
+
     const ausente = datos?.ausente;
 
     return (
-        <svg
-            width={ANCHO_DIENTE}
-            height={ALTO_GRAFICO + ALTO_DIENTE + 20}
-            className={`cursor-pointer transition-all ${seleccionado ? 'ring-2 ring-blue-500 rounded' : ''}`}
+        <div
+            className={`flex flex-col items-center bg-white rounded-lg border transition-all
+                ${seleccionado ? 'ring-2 ring-blue-500 border-blue-300' : 'border-slate-200 hover:border-slate-300'}
+                ${ausente ? 'opacity-50' : ''}`}
             onClick={() => onSelect?.(numero)}
-            onContextMenu={(e) => e.preventDefault()}
+            style={{ width: ANCHO_DIENTE + 4 }}
         >
-            {/* Fondo */}
-            <rect
-                x="0" y="0"
-                width={ANCHO_DIENTE}
-                height={ALTO_GRAFICO + ALTO_DIENTE + 5}
-                fill={ausente ? '#f3f4f6' : '#ffffff'}
-                rx="4"
-            />
-
-            {/* Visualización Anatómica de Fondo (Raíz/Corona) - Estilo sutil */}
-            <g transform={`translate(${ANCHO_DIENTE * 0.1}, ${esArriba ? 10 : 0}) scale(0.8, 1)`} opacity="0.4">
-                <path
-                    d={toothPath}
-                    fill="#334155"
-                />
-            </g>
-
-            {/* Líneas de cuadrícula (cada 2mm) */}
-            {[...Array(8)].map((_, i) => {
-                const y = esArriba ? LINEA_CERO_Y - (i * 2 * ESCALA) : LINEA_CERO_Y + (i * 2 * ESCALA);
-                if (y < 0 || y > ALTO_GRAFICO) return null;
-                return (
-                    <line
-                        key={i}
-                        x1="0" y1={y}
-                        x2={ANCHO_DIENTE} y2={y}
-                        stroke="#e5e7eb"
-                        strokeWidth={i === 0 ? 1.5 : 0.5}
-                        strokeDasharray={i === 0 ? 'none' : '2,2'}
-                    />
-                );
-            })}
-
-            {/* Línea 0 (más gruesa) */}
-            <line
-                x1="0" y1={LINEA_CERO_Y}
-                x2={ANCHO_DIENTE} y2={LINEA_CERO_Y}
-                stroke="#94a3b8"
-                strokeWidth="2"
-            />
-
-            {!ausente && (
-                <>
-                    {/* Área de bolsa patológica (sombreado rojo) */}
-                    <path
-                        d={generarAreaBolsa() || ''}
-                        fill="rgba(239, 68, 68, 0.2)"
-                        stroke="none"
-                    />
-
-                    {/* Línea de Margen Gingival (azul) */}
-                    <path
-                        d={generarPath(puntosMG)}
-                        stroke="#3b82f6"
-                        strokeWidth="2"
-                        fill="none"
-                    />
-
-                    {/* Línea de Profundidad de Sondaje (roja) */}
-                    <path
-                        d={generarPath(puntosPS)}
-                        stroke="#ef4444"
-                        strokeWidth="2"
-                        fill="none"
-                    />
-
-                    {/* Puntos interactivos para MG */}
-                    {puntosMG.map((punto, idx) => (
-                        <circle
-                            key={`mg-${PUNTOS[idx]}`}
-                            cx={punto.x}
-                            cy={punto.y}
-                            r="5"
-                            fill="#3b82f6"
-                            stroke="#ffffff"
-                            strokeWidth="1.5"
-                            className="cursor-pointer hover:r-6 transition-all"
-                            onClick={(e) => handleClickPunto(PUNTOS[idx], 'mg', e)}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                handleClickPunto(PUNTOS[idx], 'mg', { ...e, button: 2 });
-                            }}
-                        >
-                            <title>MG {PUNTOS[idx]}: {punto.valor}mm (Click: +1, Derecho: -1)</title>
-                        </circle>
+            {/* Inputs PS (arriba para maxilar, abajo para mandíbula) */}
+            {esArriba && !ausente && (
+                <div className="flex justify-between w-full px-0.5 py-1 bg-red-50/50 rounded-t-lg">
+                    {PUNTOS.map(punto => (
+                        <InputMedicion
+                            key={`ps-${punto}`}
+                            valor={datosCaraActual.profundidad_sondaje[punto]}
+                            onChange={(v) => handleChangePS(punto, v)}
+                            min={0}
+                            max={15}
+                            color="red"
+                            label={`PS ${punto}`}
+                        />
                     ))}
-
-                    {/* Puntos interactivos para PS */}
-                    {puntosPS.map((punto, idx) => (
-                        <circle
-                            key={`ps-${PUNTOS[idx]}`}
-                            cx={punto.x}
-                            cy={punto.y}
-                            r="5"
-                            fill={punto.esBolsa ? '#ef4444' : '#f87171'}
-                            stroke="#ffffff"
-                            strokeWidth="1.5"
-                            className="cursor-pointer hover:r-6 transition-all"
-                            onClick={(e) => handleClickPunto(PUNTOS[idx], 'ps', e)}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                handleClickPunto(PUNTOS[idx], 'ps', { ...e, button: 2 });
-                            }}
-                        >
-                            <title>PS {PUNTOS[idx]}: {punto.valor}mm (Click: +1, Derecho: -1)</title>
-                        </circle>
-                    ))}
-
-                    {/* Indicadores de sangrado */}
-                    {PUNTOS.map((punto, idx) => (
-                        datosCaraActual.sangrado[punto] && (
-                            <circle
-                                key={`sangrado-${punto}`}
-                                cx={posicionesX[punto]}
-                                cy={ALTO_GRAFICO + 5}
-                                r="4"
-                                fill="#dc2626"
-                                className="cursor-pointer"
-                                onClick={(e) => handleToggleSangrado(punto, e)}
-                            >
-                                <title>Sangrado {punto}</title>
-                            </circle>
-                        )
-                    ))}
-
-                    {/* Indicadores de placa */}
-                    {PUNTOS.map((punto, idx) => (
-                        datosCaraActual.placa[punto] && (
-                            <rect
-                                key={`placa-${punto}`}
-                                x={posicionesX[punto] - 4}
-                                y={ALTO_GRAFICO + 12}
-                                width="8"
-                                height="4"
-                                fill="#facc15"
-                                className="cursor-pointer"
-                                onClick={(e) => handleTogglePlaca(punto, e)}
-                            >
-                                <title>Placa {punto}</title>
-                            </rect>
-                        )
-                    ))}
-                </>
+                </div>
             )}
+
+            {/* Inputs MG */}
+            {!ausente && (
+                <div className="flex justify-between w-full px-0.5 py-1 bg-blue-50/50">
+                    {PUNTOS.map(punto => (
+                        <InputMedicion
+                            key={`mg-${punto}`}
+                            valor={datosCaraActual.margen_gingival[punto]}
+                            onChange={(v) => handleChangeMG(punto, v)}
+                            min={-10}
+                            max={10}
+                            color="blue"
+                            label={`MG ${punto}`}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Gráfico SVG */}
+            <svg
+                width={ANCHO_DIENTE}
+                height={ALTO_GRAFICO}
+                className="block"
+            >
+                {/* Fondo con pointer-events desactivados */}
+                <g pointerEvents="none">
+                    {/* Fondo blanco */}
+                    <rect
+                        x="0" y="0"
+                        width={ANCHO_DIENTE}
+                        height={ALTO_GRAFICO}
+                        fill={ausente ? '#f9fafb' : '#ffffff'}
+                    />
+
+                    {/* Forma anatómica de fondo */}
+                    <g transform={`translate(${ANCHO_DIENTE * 0.05}, ${esArriba ? 5 : 0}) scale(0.9, 0.9)`} opacity="0.15">
+                        <path d={toothPath} fill="#475569" />
+                    </g>
+
+                    {/* Líneas de cuadrícula */}
+                    {[-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10].map(mm => {
+                        const y = valorAY(mm);
+                        if (y < 0 || y > ALTO_GRAFICO) return null;
+                        const isZero = mm === 0;
+                        return (
+                            <line
+                                key={mm}
+                                x1="0" y1={y}
+                                x2={ANCHO_DIENTE} y2={y}
+                                stroke={isZero ? '#64748b' : '#e2e8f0'}
+                                strokeWidth={isZero ? 1.5 : 0.5}
+                                strokeDasharray={isZero ? 'none' : '3,3'}
+                            />
+                        );
+                    })}
+                </g>
+
+                {!ausente && (
+                    <>
+                        {/* Área de bolsa patológica */}
+                        <path
+                            d={generarAreaBolsa()}
+                            fill="rgba(239, 68, 68, 0.15)"
+                            stroke="none"
+                            pointerEvents="none"
+                        />
+
+                        {/* Línea MG (azul) */}
+                        <path
+                            d={generarPath(puntosMG)}
+                            stroke="#3b82f6"
+                            strokeWidth="2.5"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            pointerEvents="none"
+                        />
+
+                        {/* Línea PS (roja) */}
+                        <path
+                            d={generarPath(puntosPS)}
+                            stroke="#ef4444"
+                            strokeWidth="2.5"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            pointerEvents="none"
+                        />
+
+                        {/* Puntos MG (azules) - más grandes y visibles */}
+                        {puntosMG.map((punto, idx) => (
+                            <circle
+                                key={`mg-${PUNTOS[idx]}`}
+                                cx={punto.x}
+                                cy={punto.y}
+                                r="6"
+                                fill="#3b82f6"
+                                stroke="#ffffff"
+                                strokeWidth="2"
+                            >
+                                <title>MG {PUNTOS[idx]}: {punto.valor}mm</title>
+                            </circle>
+                        ))}
+
+                        {/* Puntos PS (rojos) - más grandes y visibles */}
+                        {puntosPS.map((punto, idx) => (
+                            <circle
+                                key={`ps-${PUNTOS[idx]}`}
+                                cx={punto.x}
+                                cy={punto.y}
+                                r="6"
+                                fill={punto.esBolsa ? '#dc2626' : '#ef4444'}
+                                stroke="#ffffff"
+                                strokeWidth="2"
+                            >
+                                <title>PS {PUNTOS[idx]}: {punto.valor}mm</title>
+                            </circle>
+                        ))}
+                    </>
+                )}
+            </svg>
+
+            {/* Inputs PS (abajo para mandíbula) */}
+            {!esArriba && !ausente && (
+                <div className="flex justify-between w-full px-0.5 py-1 bg-red-50/50">
+                    {PUNTOS.map(punto => (
+                        <InputMedicion
+                            key={`ps-${punto}`}
+                            valor={datosCaraActual.profundidad_sondaje[punto]}
+                            onChange={(v) => handleChangePS(punto, v)}
+                            min={0}
+                            max={15}
+                            color="red"
+                            label={`PS ${punto}`}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Indicadores de sangrado y placa */}
+            {!ausente && (
+                <div className="flex justify-between w-full px-1 py-0.5 gap-0.5">
+                    {PUNTOS.map(punto => (
+                        <div key={punto} className="flex flex-col items-center gap-0.5">
+                            {/* Toggle Sangrado */}
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleToggleSangrado(punto); }}
+                                className={`w-3 h-3 rounded-full border transition-colors
+                                    ${datosCaraActual.sangrado[punto]
+                                        ? 'bg-red-500 border-red-600'
+                                        : 'bg-white border-slate-300 hover:border-red-300'}`}
+                                title={`Sangrado ${punto}: ${datosCaraActual.sangrado[punto] ? 'Sí' : 'No'}`}
+                            />
+                            {/* Toggle Placa */}
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleTogglePlaca(punto); }}
+                                className={`w-3 h-3 rounded-sm border transition-colors
+                                    ${datosCaraActual.placa[punto]
+                                        ? 'bg-amber-400 border-amber-500'
+                                        : 'bg-white border-slate-300 hover:border-amber-300'}`}
+                                title={`Placa ${punto}: ${datosCaraActual.placa[punto] ? 'Sí' : 'No'}`}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Icono del diente */}
+            <svg width={ANCHO_DIENTE} height={ALTO_DIENTE} className="block">
+                <g transform={`translate(${ANCHO_DIENTE * 0.05}, 0) scale(0.9, 0.35)`}>
+                    <path
+                        d={toothPath}
+                        fill={ausente ? '#e2e8f0' : '#f1f5f9'}
+                        stroke={ausente ? '#94a3b8' : '#64748b'}
+                        strokeWidth="2"
+                    />
+                </g>
+                {ausente && (
+                    <line
+                        x1="10" y1="5"
+                        x2={ANCHO_DIENTE - 10} y2={ALTO_DIENTE - 5}
+                        stroke="#94a3b8"
+                        strokeWidth="2"
+                    />
+                )}
+            </svg>
 
             {/* Número del diente */}
-            <text
-                x={ANCHO_DIENTE / 2}
-                y={ALTO_GRAFICO + ALTO_DIENTE + 10}
-                textAnchor="middle"
-                fontSize="11"
-                fontWeight="bold"
-                fill={ausente ? '#9ca3af' : '#1e293b'}
-            >
+            <div className={`text-xs font-bold pb-1 ${ausente ? 'text-slate-400' : 'text-slate-700'}`}>
                 {numero}
-            </text>
-
-            {/* Icono del diente anatómico */}
-            <g transform={`translate(0, ${ALTO_GRAFICO + 5}) scale(1, 0.4)`}>
-                <path
-                    d={toothPath}
-                    fill={ausente ? '#cbd5e1' : '#f1f5f9'}
-                    stroke={ausente ? '#9ca3af' : '#64748b'}
-                    strokeWidth="1.5"
-                />
-            </g>
-
-            {ausente && (
-                <line
-                    x1="15" y1={ALTO_GRAFICO + 20}
-                    x2={ANCHO_DIENTE - 15} y2={ALTO_GRAFICO + ALTO_DIENTE + 5}
-                    stroke="#9ca3af"
-                    strokeWidth="2"
-                />
-            )}
-        </svg>
+            </div>
+        </div>
     );
 }
 

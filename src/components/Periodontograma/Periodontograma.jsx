@@ -151,8 +151,8 @@ export default function Periodontograma({ patientId }) {
     // Renderizar fila de dientes
     const renderFilaDientes = (dientes, etiqueta) => (
         <div className="flex flex-col items-center">
-            <span className="text-xs text-slate-500 mb-1">{etiqueta}</span>
-            <div className="flex gap-0.5">
+            <span className="text-xs text-slate-500 mb-2 font-medium">{etiqueta}</span>
+            <div className="flex gap-1">
                 {dientes.map(numero => (
                     <DientePeriodontal
                         key={numero}
@@ -230,18 +230,22 @@ export default function Periodontograma({ patientId }) {
                     </div>
 
                     {/* Leyenda */}
-                    <div className="flex items-center gap-4 ml-auto text-xs">
+                    <div className="flex items-center gap-4 ml-auto text-xs flex-wrap">
                         <div className="flex items-center gap-1">
-                            <span className="w-3 h-0.5 bg-blue-500"></span>
+                            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                             <span className="text-slate-600">MG (Margen Gingival)</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <span className="w-3 h-0.5 bg-red-500"></span>
+                            <span className="w-3 h-3 rounded-full bg-red-500"></span>
                             <span className="text-slate-600">PS (Prof. Sondaje)</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 bg-red-500/20 border border-red-300"></span>
-                            <span className="text-slate-600">Bolsa Patológica</span>
+                            <span className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow"></span>
+                            <span className="text-slate-600">Sangrado</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-sm bg-amber-400"></span>
+                            <span className="text-slate-600">Placa</span>
                         </div>
                     </div>
                 </div>
