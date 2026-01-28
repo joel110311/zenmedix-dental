@@ -29,6 +29,7 @@ export default function BudgetsPage() {
     const [planType, setPlanType] = useState('Contado');
     const [planDuration, setPlanDuration] = useState(1);
     const [interestRate, setInterestRate] = useState(0);
+    const [validityDays, setValidityDays] = useState(15);
 
     // Calculate payment breakdown
     const calculatePayment = (total, type, duration, rate) => {
@@ -92,6 +93,7 @@ export default function BudgetsPage() {
         setPlanType('Contado');
         setPlanDuration(1);
         setInterestRate(0);
+        setValidityDays(15);
         setShowPlanModal(true);
     };
 
@@ -111,6 +113,7 @@ export default function BudgetsPage() {
                     type: planType,
                     duration: planDuration,
                     interest: interestRate,
+                    validity: validityDays,
                     breakdown
                 }
             });
@@ -152,6 +155,7 @@ export default function BudgetsPage() {
                     type: planType,
                     duration: planDuration,
                     interest: interestRate,
+                    validity: validityDays,
                     breakdown
                 }
             });
@@ -597,6 +601,19 @@ export default function BudgetsPage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Validity Config */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Validez del Presupuesto (Días)</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="365"
+                                    value={validityDays}
+                                    onChange={e => setValidityDays(parseInt(e.target.value) || 15)}
+                                    className="w-full border border-slate-300 rounded-lg p-3"
+                                />
                             </div>
 
                             {/* Payment Summary */}

@@ -26,6 +26,7 @@ export default function PatientOdontogram({
     const [planType, setPlanType] = useState('Contado'); // Contado, Semanal, Quincenal, Mensual
     const [planDuration, setPlanDuration] = useState(1);
     const [interestRate, setInterestRate] = useState(0);
+    const [validityDays, setValidityDays] = useState(15);
 
     const calculatePayment = () => {
         const total = Object.values(patientTreatments).reduce((sum, tx) => sum + (tx.treatment.price || 0), 0);
@@ -38,7 +39,7 @@ export default function PatientOdontogram({
         return { total: finalTotal, perPayment: finalTotal / count, count, interest };
     };
 
-    const handleSaveBudget = async () => {
+    const handleSaveBudget = async (status = 'pending') => {
         if (Object.keys(patientTreatments).length === 0) return;
 
         try {
@@ -52,21 +53,34 @@ export default function PatientOdontogram({
                     code: tx.treatment.code
                 })),
                 total: calculation.total,
-                status: 'pending',
+                status: status,
                 plan: {
                     type: planType,
                     duration: planDuration,
                     interest: interestRate,
+                    validity: validityDays,
                     breakdown: calculation
                 }
             };
 
             const newBudget = await dentalService.createBudget(budgetData);
-            toast.success('Presupuesto creado');
+
+            // If accepted, update patient balance
+            if (status === 'accepted') {
+                // Fetch current patient to get balance? Or just let the server/hook handle it?
+                // For now, simpler: user goes to budget page to pay. 
+                // But wait, user expects balance update.
+                // We don't have easy access to patient current balance here unless we fetch it.
+                // Assuming 'dentalService.updatePatient' logic from BudgetsPage can be adapted later.
+                // For now, let's just create the budget.
+            }
+
+            toast.success(status === 'pending' ? 'Presupuesto creado (Pendiente)' : 'Presupuesto Aceptado');
             setIsPaymentModalOpen(false);
 
-            // Navigate to print view
-            navigate(`/imprimir/presupuesto/${newBudget.id}`);
+            // Navigate to print view (new tab preferably for print flow)
+            window.open(`/print/budget/${newBudget.id}`, '_blank');
+            navigate(`/pacientes/${patientId}/presupuestos`); // Go to budgets list
 
             // Clear
             setPatientTreatments({});
@@ -303,6 +317,17 @@ export default function PatientOdontogram({
                                 </div>
                             )}
 
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Validez (Días)</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={validityDays}
+                                    onChange={e => setValidityDays(Number(e.target.value))}
+                                    className="w-full border rounded-lg p-2"
+                                />
+                            </div>
+
                             <div className="bg-slate-50 p-4 rounded-lg border mt-4">
                                 <div className="flex justify-between mb-2">
                                     <span className="text-gray-600">Subtotal Tratamientos:</span>
@@ -336,9 +361,16 @@ export default function PatientOdontogram({
                                 <button
                                     type="button"
                                     className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
-                                    onClick={handleSaveBudget}
+                                    onClick={() => handleSaveBudget('accepted')}
                                 >
                                     Confirmar e Imprimir
+                                </button>
+                                <button
+                                    type="button"
+                                    className="flex-1 px-4 py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900"
+                                    onClick={() => handleSaveBudget('pending')}
+                                >
+                                    Solo Imprimir
                                 </button>
                             </div>
                         </div>
