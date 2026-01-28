@@ -331,6 +331,7 @@ export default function AnalysisUploader({ patientId }) {
                                 {isImage(previewFile.type) && (
                                     <>
                                         <button
+                                            type="button"
                                             onClick={() => handleZoom(-0.25)}
                                             className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
                                             title="Alejar"
@@ -341,6 +342,7 @@ export default function AnalysisUploader({ patientId }) {
                                             {Math.round(previewZoom * 100)}%
                                         </span>
                                         <button
+                                            type="button"
                                             onClick={() => handleZoom(0.25)}
                                             className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
                                             title="Acercar"
@@ -349,6 +351,7 @@ export default function AnalysisUploader({ patientId }) {
                                         </button>
                                         <div className="w-px h-6 bg-white/30 mx-1"></div>
                                         <button
+                                            type="button"
                                             onClick={() => rotatePreview('ccw')}
                                             className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
                                             title="Rotar izquierda"
@@ -356,6 +359,7 @@ export default function AnalysisUploader({ patientId }) {
                                             <RotateCcw className="w-5 h-5" />
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => rotatePreview('cw')}
                                             className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
                                             title="Rotar derecha"
@@ -365,6 +369,7 @@ export default function AnalysisUploader({ patientId }) {
                                     </>
                                 )}
                                 <button
+                                    type="button"
                                     onClick={closePreview}
                                     className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
                                 >

@@ -24,6 +24,20 @@ export default function BudgetsPage() {
     const [selectedTreatments, setSelectedTreatments] = useState([]); // Array of treatment objects
     const [formLoading, setFormLoading] = useState(false);
 
+    // Payment Plan Modal State
+    const [showPlanModal, setShowPlanModal] = useState(false);
+    const [planType, setPlanType] = useState('Contado');
+    const [planDuration, setPlanDuration] = useState(1);
+    const [interestRate, setInterestRate] = useState(0);
+
+    // Calculate payment breakdown
+    const calculatePayment = (total, type, duration, rate) => {
+        const interest = total * (rate / 100);
+        const finalTotal = total + interest;
+        const count = type === 'Contado' ? 1 : duration;
+        return { total: finalTotal, perPayment: finalTotal / count, count, interest };
+    };
+
     useEffect(() => {
         loadBudgets();
     }, [patientId]);
@@ -69,36 +83,89 @@ export default function BudgetsPage() {
         return selectedTreatments.reduce((sum, tx) => sum + (tx.price || 0), 0);
     };
 
-    const handleSaveBudget = async () => {
+    const handleSaveBudget = () => {
         if (selectedTreatments.length === 0) {
             toast.error('Agrega al menos un tratamiento');
             return;
         }
+        // Reset plan config and show modal
+        setPlanType('Contado');
+        setPlanDuration(1);
+        setInterestRate(0);
+        setShowPlanModal(true);
+    };
+
+    // Save budget as accepted and print
+    const handleConfirmBudget = async () => {
+        const subtotal = calculateTotal();
+        const breakdown = calculatePayment(subtotal, planType, planDuration, interestRate);
 
         try {
-            await dentalService.createBudget({
+            const newBudget = await dentalService.createBudget({
                 patient: patientId,
                 items: selectedTreatments.map(t => ({ id: t.id, name: t.name, price: t.price, code: t.code })),
-                total: calculateTotal(),
-                status: 'pending',
+                total: breakdown.total,
+                status: 'accepted',
                 payments: [],
                 plan: {
-                    type: 'Contado',
-                    duration: 1,
-                    interest: 0,
-                    breakdown: {
-                        total: calculateTotal(),
-                        perPayment: calculateTotal(),
-                        count: 1,
-                        interest: 0
-                    }
+                    type: planType,
+                    duration: planDuration,
+                    interest: interestRate,
+                    breakdown
                 }
             });
-            toast.success('Presupuesto creado');
+
+            // Add to patient balance (debt)
+            const currentBalance = activePatient?.balance || 0;
+            await dentalService.updatePatient(patientId, {
+                balance: currentBalance + breakdown.total
+            });
+            await refreshPatient();
+
+            toast.success('Presupuesto aceptado');
+            setShowPlanModal(false);
             setShowCreate(false);
             setSelectedTreatments([]);
             loadBudgets();
+
+            // Open print page
+            window.open(`/print/budget/${newBudget.id}`, '_blank');
         } catch (error) {
+            console.error(error);
+            toast.error('Error al guardar');
+        }
+    };
+
+    // Save budget as pending and print (Solo imprimir)
+    const handlePrintOnly = async () => {
+        const subtotal = calculateTotal();
+        const breakdown = calculatePayment(subtotal, planType, planDuration, interestRate);
+
+        try {
+            const newBudget = await dentalService.createBudget({
+                patient: patientId,
+                items: selectedTreatments.map(t => ({ id: t.id, name: t.name, price: t.price, code: t.code })),
+                total: breakdown.total,
+                status: 'pending',
+                payments: [],
+                plan: {
+                    type: planType,
+                    duration: planDuration,
+                    interest: interestRate,
+                    breakdown
+                }
+            });
+
+            toast.success('Presupuesto guardado como pendiente');
+            setShowPlanModal(false);
+            setShowCreate(false);
+            setSelectedTreatments([]);
+            loadBudgets();
+
+            // Open print page
+            window.open(`/print/budget/${newBudget.id}`, '_blank');
+        } catch (error) {
+            console.error(error);
             toast.error('Error al guardar');
         }
     };
@@ -444,6 +511,165 @@ export default function BudgetsPage() {
                             </Card>
                         ))
                     )}
+                </div>
+            )}
+
+            {/* Payment Plan Configuration Modal */}
+            {showPlanModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-primary p-6 text-white text-center">
+                            <h2 className="text-xl font-bold">Propuesta de Presupuesto</h2>
+                            <p className="text-sm opacity-90">Revise y confirme el plan de pagos seleccionado.</p>
+                        </div>
+
+                        {/* Summary Cards */}
+                        <div className="p-6">
+                            <div className="grid grid-cols-3 gap-4 mb-6">
+                                <div className="text-center p-3 border rounded-lg">
+                                    <p className="text-xs uppercase text-slate-500">Paciente</p>
+                                    <p className="font-semibold text-slate-800">
+                                        {activePatient?.firstName} {activePatient?.lastName}
+                                    </p>
+                                </div>
+                                <div className="text-center p-3 border rounded-lg">
+                                    <p className="text-xs uppercase text-slate-500">Plan</p>
+                                    <p className="font-semibold text-primary">
+                                        {planType} ({calculatePayment(calculateTotal(), planType, planDuration, interestRate).count})
+                                    </p>
+                                </div>
+                                <div className="text-center p-3 border rounded-lg">
+                                    <p className="text-xs uppercase text-slate-500">Total Final</p>
+                                    <p className="font-bold text-xl text-red-500">
+                                        ${calculatePayment(calculateTotal(), planType, planDuration, interestRate).total.toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Plan Configuration */}
+                            <div className="space-y-4 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Plan</label>
+                                    <select
+                                        value={planType}
+                                        onChange={e => {
+                                            setPlanType(e.target.value);
+                                            if (e.target.value === 'Contado') {
+                                                setPlanDuration(1);
+                                                setInterestRate(0);
+                                            }
+                                        }}
+                                        className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 focus:ring-2 focus:ring-primary"
+                                    >
+                                        <option value="Contado">Contado (Pago Único)</option>
+                                        <option value="Semanal">Semanal</option>
+                                        <option value="Quincenal">Quincenal</option>
+                                        <option value="Mensual">Mensual</option>
+                                    </select>
+                                </div>
+
+                                {planType !== 'Contado' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                N° de {planType === 'Semanal' ? 'Semanas' : planType === 'Quincenal' ? 'Quincenas' : 'Meses'}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="24"
+                                                value={planDuration}
+                                                onChange={e => setPlanDuration(parseInt(e.target.value) || 1)}
+                                                className="w-full border border-slate-300 rounded-lg p-3"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Interés (%)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                value={interestRate}
+                                                onChange={e => setInterestRate(parseFloat(e.target.value) || 0)}
+                                                className="w-full border border-slate-300 rounded-lg p-3"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Payment Summary */}
+                            <div className="bg-green-50 rounded-lg p-4 mb-6">
+                                <p className="text-sm font-medium text-slate-500 mb-2">RESUMEN DE PAGOS</p>
+                                {(() => {
+                                    const breakdown = calculatePayment(calculateTotal(), planType, planDuration, interestRate);
+                                    return (
+                                        <div className="text-center">
+                                            {planType === 'Contado' ? (
+                                                <p className="text-lg font-semibold text-green-700">
+                                                    Pago Único de ${breakdown.total.toFixed(2)}
+                                                </p>
+                                            ) : (
+                                                <>
+                                                    <p className="text-lg font-semibold text-green-700">
+                                                        {breakdown.count} pagos de ${breakdown.perPayment.toFixed(2)}
+                                                    </p>
+                                                    {breakdown.interest > 0 && (
+                                                        <p className="text-sm text-slate-500">
+                                                            (Incluye ${breakdown.interest.toFixed(2)} de intereses)
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Subtotal Info */}
+                            <div className="border-t pt-4 mb-4">
+                                <div className="flex justify-between text-sm text-slate-500">
+                                    <span>Subtotal Tratamientos:</span>
+                                    <span>${calculateTotal().toFixed(2)}</span>
+                                </div>
+                                {interestRate > 0 && (
+                                    <div className="flex justify-between text-sm text-slate-500">
+                                        <span>Intereses ({interestRate}%):</span>
+                                        <span>${(calculateTotal() * interestRate / 100).toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between font-bold text-lg mt-2">
+                                    <span>Total Final:</span>
+                                    <span>${calculatePayment(calculateTotal(), planType, planDuration, interestRate).total.toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={() => setShowPlanModal(false)}
+                                >
+                                    <X className="w-4 h-4 mr-1" /> Cancelar
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={handlePrintOnly}
+                                >
+                                    <Printer className="w-4 h-4 mr-1" /> Solo Imprimir
+                                </Button>
+                                <Button
+                                    className="flex-1"
+                                    onClick={handleConfirmBudget}
+                                >
+                                    <Check className="w-4 h-4 mr-1" /> Aceptar y Generar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
