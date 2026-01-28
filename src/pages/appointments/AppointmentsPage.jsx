@@ -48,6 +48,7 @@ const callWebhook = async (hookKey, payload, settings) => {
 
 import WeeklyCalendar from '../../components/appointments/WeeklyCalendar';
 import MiniCalendar from '../../components/appointments/MiniCalendar';
+import AdvancedCalendar from '../../components/appointments/AdvancedCalendar';
 
 export default function AppointmentsPage() {
     const { settings } = useSettings();
