@@ -169,9 +169,10 @@ export const api = {
                 source: data.source || 'manual'
             };
 
-            // Add relations if provided as valid IDs (15 chars for PocketBase)
-            if (data.patientId && data.patientId.length === 15) appointmentData.patient = data.patientId;
-            if (data.clinicId && data.clinicId.length === 15) appointmentData.clinic = data.clinicId;
+            // Add relations if provided as IDs
+            if (data.patientId) appointmentData.patient = data.patientId;
+            // Send clinicId even if not standard length, but ensure it's not empty string to avoid 400
+            if (data.clinicId && data.clinicId.trim()) appointmentData.clinic = data.clinicId;
             if (data.resourceId) appointmentData.resource_id = data.resourceId;
 
             // FIX: Only send doctor relation if ID is valid (15 chars), otherwise append to notes
