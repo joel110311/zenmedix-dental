@@ -4,6 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 
 // Styles for custom events
@@ -140,12 +141,18 @@ const AdvancedCalendar = ({
             <style>{eventStyles}</style>
             <FullCalendar
                 ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
                 initialView="timeGridWeek"
                 headerToolbar={{
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listDay'
+                }}
+                views={{
+                    listDay: { buttonText: 'Diaria Global' },
+                    timeGridDay: { buttonText: 'Diaria' },
+                    timeGridWeek: { buttonText: 'Semanal' },
+                    dayGridMonth: { buttonText: 'Mes' }
                 }}
                 locale={esLocale}
                 slotMinTime="07:00:00"
