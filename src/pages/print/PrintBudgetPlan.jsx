@@ -51,7 +51,14 @@ export default function PrintBudgetPlan() {
             {/* Controls - No Print */}
             <div className="no-print bg-white border-b border-slate-200 p-3 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <Button variant="ghost" onClick={() => navigate(-1)}>
+                    <Button variant="ghost" onClick={() => {
+                        // If opened in new tab, close it. Otherwise navigate back.
+                        if (window.history.length <= 1) {
+                            window.close();
+                        } else {
+                            navigate(-1);
+                        }
+                    }}>
                         <ArrowLeft className="w-4 h-4 mr-2" /> Volver
                     </Button>
                     <div className="flex gap-3 items-center">
