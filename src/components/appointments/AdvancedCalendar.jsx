@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -53,33 +53,50 @@ const AdvancedCalendar = ({
     };
 
     // Transform appointments to FullCalendar events
-    const events = appointments.map(appt => {
-        // Calculate end time based on duration stored in notes or default 30 min
-        let duration = 30; // default
-        if (appt.notes && appt.notes.includes('[duration:')) {
-            const match = appt.notes.match(/\[duration:(\d+)\]/);
-            if (match) duration = parseInt(match[1]);
-        }
+    // Transform appointments to FullCalendar events
+    const events = useMemo(() => {
+        if (!appointments || !Array.isArray(appointments)) return [];
 
-        // Parse start date
-        const start = new Date(`${appt.date.split('T')[0]}T${appt.time}`);
-        // Calculate end date
-        const end = new Date(start.getTime() + duration * 60000);
+        return appointments
+            .filter(appt => appt && appt.date && appt.time)
+            .map(appt => {
+                try {
+                    // Calculate end time based on duration stored in notes or default 30 min
+                    let duration = 30; // default
+                    if (appt.notes && appt.notes.includes('[duration:')) {
+                        const match = appt.notes.match(/\[duration:(\d+)\]/);
+                        if (match) duration = parseInt(match[1]);
+                    }
 
-        return {
-            id: appt.id,
-            title: `${appt.patientName} ${appt.reason ? `- ${appt.reason}` : ''}`,
-            start: start,
-            end: end,
-            backgroundColor: getEventColor(appt),
-            borderColor: getEventColor(appt),
-            textColor: '#fff',
-            extendedProps: {
-                ...appt,
-                duration: duration
-            }
-        };
-    });
+                    // Parse start date safely
+                    const dateStr = appt.date.includes('T') ? appt.date.split('T')[0] : appt.date;
+                    const startInfo = `${dateStr}T${appt.time}`;
+                    const start = new Date(startInfo);
+
+                    if (isNaN(start.getTime())) return null;
+
+                    // Calculate end date
+                    const end = new Date(start.getTime() + duration * 60000);
+
+                    return {
+                        id: appt.id,
+                        title: `${appt.patientName} ${appt.reason ? `- ${appt.reason}` : ''}`,
+                        start: start,
+                        end: end,
+                        backgroundColor: getEventColor(appt),
+                        borderColor: getEventColor(appt),
+                        textColor: '#fff',
+                        extendedProps: {
+                            ...appt,
+                            duration: duration
+                        }
+                    };
+                } catch (e) {
+                    return null;
+                }
+            })
+            .filter(Boolean);
+    }, [appointments]);
 
     const handleDateSelect = (selectInfo) => {
         // Convert to our format
