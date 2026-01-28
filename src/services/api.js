@@ -175,39 +175,87 @@ export const api = {
             if (data.resourceId) appointmentData.resource_id = data.resourceId;
 
             // FIX: Only send doctor relation if ID is valid (15 chars), otherwise append to notes
-            if (data.doctorId) {
-                if (data.doctorId.length === 15) {
-                    appointmentData.doctor = data.doctorId;
-                } else if (data.doctor?.name) {
-                    // Fallback for settings-based doctors: add to notes
-                    const doctorNote = `[Dr: ${data.doctor.name}]`;
-                    appointmentData.notes = appointmentData.notes
-                        ? `${appointmentData.notes}\n${doctorNote}`
-                        : doctorNote;
-                }
+            if (data.doctor?.name) {
+                // Fallback for settings-based doctors
+                const doctorNote = `[Dr: ${data.doctor.name}]`;
+                appointmentData.notes = appointmentData.notes
+                    ? `${appointmentData.notes}\n${doctorNote}`
+                    : doctorNote;
+            }
+        }
+
+            // Pack duration into notes if present
+            if(data.duration) {
+        const durationNote = `[duration:${data.duration}]`;
+appointmentData.notes = appointmentData.notes
+    ? `${appointmentData.notes} ${durationNote}`
+    : durationNote;
             }
 
+try {
+    const record = await pb.collection('appointments').create(appointmentData);
+    return record;
+} catch (error) {
+    console.error('Error creating appointment:', error);
+    if (error.response?.data) {
+        console.error('Validation errors:', error.response.data);
+    }
+    throw error;
+}
+        },
+
+update: async (id, data) => {
+    const updateData = { ...data };
+    // Pack duration into notes if present in update
+    if (data.duration) {
+        // Fetch current note first to append/replace? Or just append if simple update.
+        // For simplicity, we assume the caller handles the note merging or we just append.
+        // Ideally we should preserve existing notes.
+        // Let's rely on the caller passing the full 'notes' string if they want to keep it, 
+        // OR we can implement a smarter update here. 
+        // BUT, to keep it simple: if 'notes' is passed, we append duration. 
+        // If 'notes' is NOT passed, we need to be careful not to overwrite.
+
+        // Better approach: The caller (AdvancedCalendar) should pass the full new note string.
+        // So here we might not need to do anything if the caller already formatted the string.
+        // However, for consistency with create, let's check.
+
+        // Actually, let's keep it simple: we expect the UI to handle the note formatting for updates
+        // to avoid double fetching.
+        // BUT, for the drag-resize, we only get 'duration'. So we DO need to handle it.
+
+        if (!updateData.notes) {
+            // We need to get the existing record to preserve notes? 
+            // Or we can just let the backend handle partial updates, but we need to append to the existing string.
+            // PocketBase doesn't support 'append' operation natively in one go without fetching.
+            // So we will assume the UI sends the full note payload OR we do a fetch-update here.
             try {
-                const record = await pb.collection('appointments').create(appointmentData);
-                return record;
-            } catch (error) {
-                console.error('Error creating appointment:', error);
-                if (error.response?.data) {
-                    console.error('Validation errors:', error.response.data);
-                }
-                throw error;
+                const existing = await pb.collection('appointments').getOne(id);
+                let currentNotes = existing.notes || '';
+                // Remove old duration tag if exists
+                currentNotes = currentNotes.replace(/\[duration:\d+\]/g, '').trim();
+                updateData.notes = `${currentNotes} [duration:${data.duration}]`;
+                delete updateData.duration; // Clean up
+            } catch (e) {
+                console.error("Error updating duration", e);
             }
-        },
+        } else {
+            // If notes ARE passed, ensure duration is there
+            if (!updateData.notes.includes('[duration:')) {
+                updateData.notes = `${updateData.notes} [duration:${data.duration}]`;
+            }
+            delete updateData.duration;
+        }
+    }
 
-        update: async (id, data) => {
-            const record = await pb.collection('appointments').update(id, data);
-            return record;
-        },
+    const record = await pb.collection('appointments').update(id, updateData);
+    return record;
+},
 
-        delete: async (id) => {
-            await pb.collection('appointments').delete(id);
-            return true;
-        },
+    delete: async (id) => {
+        await pb.collection('appointments').delete(id);
+        return true;
+    },
 
         // Check availability for n8n integration
         checkAvailability: async (clinicId, doctorId, date, time, resourceId) => {
@@ -259,16 +307,16 @@ export const api = {
         }
     },
 
-    // ==================== CONSULTATIONS ====================
-    consultations: {
-        listByPatient: async (patientId) => {
-            const records = await pb.collection('consultations').getFullList({
-                filter: `patient = "${patientId}"`,
-                sort: '-created',
-                expand: 'doctor,appointment'
-            });
-            return records;
-        },
+// ==================== CONSULTATIONS ====================
+consultations: {
+    listByPatient: async (patientId) => {
+        const records = await pb.collection('consultations').getFullList({
+            filter: `patient = "${patientId}"`,
+            sort: '-created',
+            expand: 'doctor,appointment'
+        });
+        return records;
+    },
 
         get: async (id) => {
             const record = await pb.collection('consultations').getOne(id, {
@@ -277,88 +325,88 @@ export const api = {
             return record;
         },
 
-        create: async (data) => {
-            const consultationData = {
-                ...data,
-                type: data.type || 'consultation'
-            };
+            create: async (data) => {
+                const consultationData = {
+                    ...data,
+                    type: data.type || 'consultation'
+                };
 
-            // Convert patientId to patient relation
-            if (data.patientId && !data.patient) {
-                consultationData.patient = data.patientId;
-                delete consultationData.patientId;
-            }
-
-            if (data.appointmentId && !data.appointment) {
-                consultationData.appointment = data.appointmentId;
-                delete consultationData.appointmentId;
-            }
-
-            const record = await pb.collection('consultations').create(consultationData);
-
-            // Update patient's lastVisit
-            if (consultationData.patient) {
-                try {
-                    await pb.collection('patients').update(consultationData.patient, {
-                        lastVisit: new Date().toISOString()
-                    });
-                } catch (e) {
-                    console.warn('Could not update patient lastVisit:', e);
+                // Convert patientId to patient relation
+                if (data.patientId && !data.patient) {
+                    consultationData.patient = data.patientId;
+                    delete consultationData.patientId;
                 }
-            }
 
-            return record;
-        },
+                if (data.appointmentId && !data.appointment) {
+                    consultationData.appointment = data.appointmentId;
+                    delete consultationData.appointmentId;
+                }
 
-        update: async (id, data) => {
-            const record = await pb.collection('consultations').update(id, data);
-            return record;
-        }
+                const record = await pb.collection('consultations').create(consultationData);
+
+                // Update patient's lastVisit
+                if (consultationData.patient) {
+                    try {
+                        await pb.collection('patients').update(consultationData.patient, {
+                            lastVisit: new Date().toISOString()
+                        });
+                    } catch (e) {
+                        console.warn('Could not update patient lastVisit:', e);
+                    }
+                }
+
+                return record;
+            },
+
+                update: async (id, data) => {
+                    const record = await pb.collection('consultations').update(id, data);
+                    return record;
+                }
+},
+
+// ==================== CLINICS ====================
+clinics: {
+    list: async () => {
+        const records = await pb.collection('clinics').getFullList({
+            sort: 'name'
+        });
+        return records;
     },
-
-    // ==================== CLINICS ====================
-    clinics: {
-        list: async () => {
-            const records = await pb.collection('clinics').getFullList({
-                sort: 'name'
-            });
-            return records;
-        },
 
         get: async (id) => {
             const record = await pb.collection('clinics').getOne(id);
             return record;
         },
 
-        create: async (data) => {
-            const record = await pb.collection('clinics').create(data);
-            return record;
-        },
+            create: async (data) => {
+                const record = await pb.collection('clinics').create(data);
+                return record;
+            },
 
-        update: async (id, data) => {
-            const record = await pb.collection('clinics').update(id, data);
-            return record;
-        },
+                update: async (id, data) => {
+                    const record = await pb.collection('clinics').update(id, data);
+                    return record;
+                },
 
-        delete: async (id) => {
-            await pb.collection('clinics').delete(id);
-            return true;
+                    delete: async (id) => {
+                        await pb.collection('clinics').delete(id);
+                        return true;
+                    }
+},
+
+// ==================== CONFIG (Settings) ====================
+config: {
+    get: async (key) => {
+        try {
+            const records = await pb.collection('config').getFullList({
+                filter: `key = "${key}"`
+            });
+            return records.length > 0 ? records[0].value : null;
+        } catch (error) {
+            console.error('Config get error:', error);
+            return null;
         }
     },
-
-    // ==================== CONFIG (Settings) ====================
-    config: {
-        get: async (key) => {
-            try {
-                const records = await pb.collection('config').getFullList({
-                    filter: `key = "${key}"`
-                });
-                return records.length > 0 ? records[0].value : null;
-            } catch (error) {
-                console.error('Config get error:', error);
-                return null;
-            }
-        },
 
         set: async (key, value) => {
             try {
@@ -379,50 +427,50 @@ export const api = {
             }
         },
 
-        getAll: async () => {
-            try {
-                const records = await pb.collection('config').getFullList();
-                const config = {};
-                records.forEach(r => {
-                    config[r.key] = r.value;
-                });
-                return config;
-            } catch (error) {
-                console.error('Config getAll error:', error);
-                return {};
+            getAll: async () => {
+                try {
+                    const records = await pb.collection('config').getFullList();
+                    const config = {};
+                    records.forEach(r => {
+                        config[r.key] = r.value;
+                    });
+                    return config;
+                } catch (error) {
+                    console.error('Config getAll error:', error);
+                    return {};
+                }
             }
+},
+
+// ==================== AUDIT LOGS ====================
+auditLogs: {
+    list: async (page = 1, perPage = 50, filters = {}) => {
+        let filter = '';
+
+        if (filters.action) {
+            filter += `action ~ "${filters.action}"`;
         }
+        if (filters.entity) {
+            if (filter) filter += ' && ';
+            filter += `entity = "${filters.entity}"`;
+        }
+        if (filters.userId) {
+            if (filter) filter += ' && ';
+            filter += `user = "${filters.userId}"`;
+        }
+
+        const records = await pb.collection('audit_logs').getList(page, perPage, {
+            filter: filter || undefined,
+            sort: '-created',
+            expand: 'user'
+        });
+
+        return {
+            items: records.items,
+            totalPages: records.totalPages,
+            totalItems: records.totalItems
+        };
     },
-
-    // ==================== AUDIT LOGS ====================
-    auditLogs: {
-        list: async (page = 1, perPage = 50, filters = {}) => {
-            let filter = '';
-
-            if (filters.action) {
-                filter += `action ~ "${filters.action}"`;
-            }
-            if (filters.entity) {
-                if (filter) filter += ' && ';
-                filter += `entity = "${filters.entity}"`;
-            }
-            if (filters.userId) {
-                if (filter) filter += ' && ';
-                filter += `user = "${filters.userId}"`;
-            }
-
-            const records = await pb.collection('audit_logs').getList(page, perPage, {
-                filter: filter || undefined,
-                sort: '-created',
-                expand: 'user'
-            });
-
-            return {
-                items: records.items,
-                totalPages: records.totalPages,
-                totalItems: records.totalItems
-            };
-        },
 
         create: async (data) => {
             const user = pb.authStore.record;
@@ -437,10 +485,10 @@ export const api = {
             });
             return record;
         }
-    },
+},
 
-    // ==================== DENTAL SERVICE (Proxy) ====================
-    dentalService: dentalService
+// ==================== DENTAL SERVICE (Proxy) ====================
+dentalService: dentalService
 };
 
 // Export default

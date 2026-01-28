@@ -381,63 +381,48 @@ export default function AppointmentsPage() {
             {/* Calendar Tab */}
             {activeTab === 'calendar' && (
                 <div className="flex flex-col xl:flex-row gap-6">
-                    <div className="flex-1 min-h-[600px]">
-                        <WeeklyCalendar
+                    <div className="flex-1 min-h-[800px]">
+                        <AdvancedCalendar
                             appointments={displayedAppointments}
-                            currentDate={selectedDate}
-                            onDateChange={setSelectedDate}
+                            onDateSelect={(info) => {
+                                // Switch to schedule tab and pre-fill
+                                setActiveTab('schedule');
+                                setDate(info.date);
+                                setTime(info.time);
+                            }}
+                            onEventClick={(appt) => {
+                                // Show delete/details modal? For now just log or simple alert
+                                // Or maybe quick delete?
+                                if (confirm(`¿Eliminar cita de ${appt.patientName}?`)) {
+                                    handleDelete(appt.id);
+                                }
+                            }}
+                            onEventDrop={async (info) => {
+                                try {
+                                    await api.appointments.update(info.id, {
+                                        date: info.date,
+                                        time: info.time
+                                    });
+                                    toast.success('Cita movida exitosamente');
+                                    loadData(); // Refresh to ensure sync
+                                } catch (error) {
+                                    toast.error('Error al mover cita');
+                                    info.revert();
+                                }
+                            }}
+                            onEventResize={async (info) => {
+                                try {
+                                    await api.appointments.update(info.id, {
+                                        duration: info.duration // API wrapper will handle packing this into notes
+                                    });
+                                    toast.success(`Duración actualizada a ${info.duration} min`);
+                                    loadData();
+                                } catch (error) {
+                                    toast.error('Error al actualizar duración');
+                                    info.revert();
+                                }
+                            }}
                             clinics={settings.clinics}
-                        />
-                    </div>
-                    <div className="w-full xl:w-80 space-y-6">
-                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Mostrar citas
-                            </label>
-                            <div>
-                                <label className="text-xs text-slate-500 mb-1 block">Médico *</label>
-                                <select
-                                    value={filteredDoctorId}
-                                    onChange={(e) => setFilteredDoctorId(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
-                                >
-                                    <option value="all">(TODOS)</option>
-                                    {settings.doctors?.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="mt-4">
-                                <label className="text-xs text-slate-500 mb-1 block">Clínica *</label>
-                                <select
-                                    value={filteredClinicId}
-                                    onChange={(e) => setFilteredClinicId(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
-                                >
-                                    <option value="all">(TODAS)</option>
-                                    {settings.clinics?.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="mt-4">
-                                <label className="text-xs text-slate-500 mb-1 block">Sillón</label>
-                                <select
-                                    value={filteredResourceId}
-                                    onChange={(e) => setFilteredResourceId(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary text-sm"
-                                >
-                                    <option value="all">(TODOS)</option>
-                                    {resources.map(r => (
-                                        <option key={r.id} value={r.id}>{r.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <MiniCalendar
-                            selectedDate={selectedDate}
-                            onDateChange={setSelectedDate}
                         />
                     </div>
                 </div>
