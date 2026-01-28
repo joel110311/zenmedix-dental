@@ -33,7 +33,8 @@ export default function PatientOdontogram({
 
         const interest = total * (interestRate / 100);
         const finalTotal = total + interest;
-        const count = planType === 'Semanal' ? planDuration * 4 : planType === 'Quincenal' ? planDuration * 2 : planDuration;
+        // planDuration = número de pagos directamente (semanas, quincenas o meses)
+        const count = planDuration;
         return { total: finalTotal, perPayment: finalTotal / count, count, interest };
     };
 

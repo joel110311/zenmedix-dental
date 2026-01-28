@@ -65,10 +65,17 @@ export default function LabResults() {
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [previewFile, setPreviewFile] = useState(null);
     const [studyFilter, setStudyFilter] = useState('');
+    const [expandedResult, setExpandedResult] = useState(null); // Track which result is expanded
     const fileInputRef = useRef(null);
 
-    // Form state for new analysis
-    const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
+    // Form state for new analysis - using local date to avoid timezone issues
+    const getLocalDateString = () => {
+        const now = new Date();
+        return now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0');
+    };
+    const [formDate, setFormDate] = useState(getLocalDateString());
     const [formType, setFormType] = useState('');
     const [formResults, setFormResults] = useState('');
     const [formNotes, setFormNotes] = useState('');
@@ -166,7 +173,7 @@ export default function LabResults() {
 
         const newRequest = {
             id: Date.now().toString(),
-            date: new Date().toISOString().split('T')[0],
+            date: getLocalDateString(),
             studies: studyNames,
             customStudies: customStudies.trim(),
             patientId: activePatient.id
@@ -477,64 +484,98 @@ export default function LabResults() {
                         </div>
                     </Card>
                 ) : (
-                    labResults.map((result) => (
-                        <Card key={result.id}>
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-4 flex-1">
-                                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-slate-800 dark:text-white">{result.type}</h3>
-                                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                            <Calendar className="w-4 h-4" />
-                                            {new Date(result.date).toLocaleDateString('es-ES')}
+                    labResults.map((result) => {
+                        const isExpanded = expandedResult === result.id;
+                        return (
+                            <Card key={result.id}>
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-4 flex-1">
+                                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                         </div>
-                                        {result.results && (
-                                            <pre className="mt-2 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-sans bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
-                                                {result.results}
-                                            </pre>
-                                        )}
-                                        {result.notes && (
-                                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 italic">
-                                                Notas: {result.notes}
-                                            </p>
-                                        )}
-
-                                        {/* Attachments */}
-                                        {result.attachments?.length > 0 && (
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                {result.attachments.map(file => (
-                                                    <div key={file.id} className="relative group">
-                                                        {file.type?.startsWith('image/') ? (
-                                                            <img
-                                                                src={file.data}
-                                                                alt={file.name}
-                                                                className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                                                                onClick={() => setPreviewFile(file)}
-                                                            />
-                                                        ) : (
-                                                            <a
-                                                                href={file.data}
-                                                                download={file.name}
-                                                                className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                                            >
-                                                                <File className="w-4 h-4" />
-                                                                {file.name}
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-slate-800 dark:text-white">{result.type}</h3>
+                                            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                                <Calendar className="w-4 h-4" />
+                                                {new Date(result.date).toLocaleDateString('es-ES')}
                                             </div>
-                                        )}
+                                            {result.notes && !isExpanded && (
+                                                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 italic truncate max-w-md">
+                                                    Notas: {result.notes.substring(0, 50)}{result.notes.length > 50 ? '...' : ''}
+                                                </p>
+                                            )}
+
+                                            {/* Expanded details */}
+                                            {isExpanded && (
+                                                <div className="mt-4 space-y-3">
+                                                    {result.results && (
+                                                        <div>
+                                                            <label className="text-xs font-medium text-slate-500 uppercase">Resultados</label>
+                                                            <pre className="mt-1 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-sans bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
+                                                                {result.results}
+                                                            </pre>
+                                                        </div>
+                                                    )}
+                                                    {result.notes && (
+                                                        <div>
+                                                            <label className="text-xs font-medium text-slate-500 uppercase">Notas / Observaciones</label>
+                                                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
+                                                                {result.notes}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Attachments */}
+                                                    {result.attachments?.length > 0 && (
+                                                        <div>
+                                                            <label className="text-xs font-medium text-slate-500 uppercase mb-2 block">Archivos Adjuntos ({result.attachments.length})</label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {result.attachments.map(file => (
+                                                                    <div key={file.id} className="relative group">
+                                                                        {file.type?.startsWith('image/') ? (
+                                                                            <img
+                                                                                src={file.data}
+                                                                                alt={file.name}
+                                                                                className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-slate-200"
+                                                                                onClick={() => setPreviewFile(file)}
+                                                                            />
+                                                                        ) : (
+                                                                            <a
+                                                                                href={file.data}
+                                                                                download={file.name}
+                                                                                className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                                            >
+                                                                                <File className="w-4 h-4" />
+                                                                                {file.name}
+                                                                            </a>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setExpandedResult(isExpanded ? null : result.id)}
+                                            className="text-blue-500"
+                                            title={isExpanded ? "Ocultar detalles" : "Ver detalles"}
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(result.id)} className="text-red-500">
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 </div>
-                                <Button variant="ghost" size="sm" onClick={() => handleDelete(result.id)} className="text-red-500">
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </Card>
-                    ))
+                            </Card>
+                        );
+                    })
                 )}
             </div>
 
