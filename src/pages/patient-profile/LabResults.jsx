@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FlaskConical, Plus, Trash2, FileText, Calendar, Upload, Download, Image, File, X, Eye, Printer, ClipboardList } from 'lucide-react';
+import { FlaskConical, Plus, Trash2, FileText, Calendar, Upload, Download, Image, File, X, Eye, Printer, ClipboardList, ZoomIn, ZoomOut, RotateCw, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePatient } from '../../context/PatientContext';
 import { Card } from '../../components/ui/Card';
@@ -66,6 +66,7 @@ export default function LabResults() {
     const [previewFile, setPreviewFile] = useState(null);
     const [studyFilter, setStudyFilter] = useState('');
     const [expandedResult, setExpandedResult] = useState(null); // Track which result is expanded
+    const [previewZoom, setPreviewZoom] = useState(1);
     const fileInputRef = useRef(null);
 
     // Form state for new analysis - using local date to avoid timezone issues
@@ -525,35 +526,39 @@ export default function LabResults() {
                                                         </div>
                                                     )}
 
-                                                    {/* Attachments */}
-                                                    {result.attachments?.length > 0 && (
-                                                        <div>
-                                                            <label className="text-xs font-medium text-slate-500 uppercase mb-2 block">Archivos Adjuntos ({result.attachments.length})</label>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {result.attachments.map(file => (
-                                                                    <div key={file.id} className="relative group">
-                                                                        {file.type?.startsWith('image/') ? (
-                                                                            <img
-                                                                                src={file.data}
-                                                                                alt={file.name}
-                                                                                className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-slate-200"
-                                                                                onClick={() => setPreviewFile(file)}
-                                                                            />
-                                                                        ) : (
-                                                                            <a
-                                                                                href={file.data}
-                                                                                download={file.name}
-                                                                                className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                                                            >
-                                                                                <File className="w-4 h-4" />
-                                                                                {file.name}
-                                                                            </a>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
+                                                    {/* Attachments / Files */}
+                                                    {(() => {
+                                                        const filesList = result.files || result.attachments || [];
+                                                        return filesList.length > 0 && (
+                                                            <div>
+                                                                <label className="text-xs font-medium text-slate-500 uppercase mb-2 block">Archivos Adjuntos ({filesList.length})</label>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {filesList.map((file, idx) => (
+                                                                        <div key={file.id || idx} className="relative group">
+                                                                            {file.type?.startsWith('image/') ? (
+                                                                                <img
+                                                                                    src={file.data}
+                                                                                    alt={file.name}
+                                                                                    className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-slate-200"
+                                                                                    style={file.rotation ? { transform: `rotate(${file.rotation}deg)` } : undefined}
+                                                                                    onClick={() => { setPreviewFile(file); setPreviewZoom(1); }}
+                                                                                />
+                                                                            ) : (
+                                                                                <a
+                                                                                    href={file.data}
+                                                                                    download={file.name}
+                                                                                    className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                                                >
+                                                                                    <File className="w-4 h-4" />
+                                                                                    {file.name}
+                                                                                </a>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        );
+                                                    })()}
                                                 </div>
                                             )}
                                         </div>
@@ -579,18 +584,77 @@ export default function LabResults() {
                 )}
             </div>
 
-            {/* Image Preview Modal */}
+            {/* Image Preview Modal with Zoom */}
             {previewFile && (
-                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewFile(null)}>
-                    <div className="relative max-w-4xl max-h-[90vh]">
-                        <button
-                            onClick={() => setPreviewFile(null)}
-                            className="absolute -top-10 right-0 text-white hover:text-slate-300"
+                <div
+                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                    onClick={() => setPreviewFile(null)}
+                >
+                    <div
+                        className="relative max-w-5xl max-h-[90vh] w-full flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 bg-slate-900/80 rounded-t-xl">
+                            <span className="text-white font-medium truncate max-w-[50%]">
+                                {previewFile.name}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setPreviewZoom(prev => Math.max(prev - 0.25, 0.5))}
+                                    className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                    title="Alejar"
+                                >
+                                    <ZoomOut className="w-5 h-5" />
+                                </button>
+                                <span className="text-white text-sm font-mono min-w-[50px] text-center">
+                                    {Math.round(previewZoom * 100)}%
+                                </span>
+                                <button
+                                    onClick={() => setPreviewZoom(prev => Math.min(prev + 0.25, 4))}
+                                    className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                    title="Acercar"
+                                >
+                                    <ZoomIn className="w-5 h-5" />
+                                </button>
+                                <div className="w-px h-6 bg-white/30 mx-1"></div>
+                                <a
+                                    href={previewFile.data}
+                                    download={previewFile.name}
+                                    className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                    title="Descargar"
+                                >
+                                    <Download className="w-5 h-5" />
+                                </a>
+                                <button
+                                    onClick={() => setPreviewFile(null)}
+                                    className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Preview Content */}
+                        <div
+                            className="flex-1 bg-slate-800 rounded-b-xl overflow-auto flex items-center justify-center p-4"
+                            onWheel={(e) => {
+                                e.preventDefault();
+                                const delta = e.deltaY > 0 ? -0.2 : 0.2;
+                                setPreviewZoom(prev => Math.min(Math.max(prev + delta, 0.5), 4));
+                            }}
                         >
-                            <X className="w-6 h-6" />
-                        </button>
-                        <img src={previewFile.data} alt={previewFile.name} className="max-w-full max-h-[80vh] rounded-lg" />
-                        <p className="text-white text-center mt-2">{previewFile.name}</p>
+                            <img
+                                src={previewFile.data}
+                                alt={previewFile.name}
+                                className="object-contain transition-transform duration-200 cursor-zoom-in"
+                                style={{
+                                    transform: `rotate(${previewFile.rotation || 0}deg) scale(${previewZoom})`,
+                                    maxWidth: previewZoom > 1 ? 'none' : '100%',
+                                    maxHeight: previewZoom > 1 ? 'none' : '70vh'
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
             )}

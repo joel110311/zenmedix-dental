@@ -1,15 +1,24 @@
 import { useState, useRef } from 'react';
-import { Upload, X, RotateCw, RotateCcw, ZoomIn, File, Image, Trash2, Save, Eye } from 'lucide-react';
+import { Upload, X, RotateCw, RotateCcw, ZoomIn, ZoomOut, File, Image, Trash2, Save, Eye } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { toast } from 'sonner';
+
+// Helper function to get local date string (avoids UTC timezone issues)
+const getLocalDateString = () => {
+    const now = new Date();
+    return now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0');
+};
 
 export default function AnalysisUploader({ patientId }) {
     const [files, setFiles] = useState([]);
     const [analysisType, setAnalysisType] = useState('');
-    const [analysisDate, setAnalysisDate] = useState(new Date().toISOString().split('T')[0]);
+    const [analysisDate, setAnalysisDate] = useState(getLocalDateString());
     const [notes, setNotes] = useState('');
     const [previewFile, setPreviewFile] = useState(null);
     const [previewRotation, setPreviewRotation] = useState(0);
+    const [previewZoom, setPreviewZoom] = useState(1);
     const fileInputRef = useRef(null);
 
     const handleFileSelect = (e) => {
@@ -57,6 +66,7 @@ export default function AnalysisUploader({ patientId }) {
     const openPreview = (file) => {
         setPreviewFile(file);
         setPreviewRotation(file.rotation);
+        setPreviewZoom(1);
     };
 
     const closePreview = () => {
@@ -71,10 +81,21 @@ export default function AnalysisUploader({ patientId }) {
         }
         setPreviewFile(null);
         setPreviewRotation(0);
+        setPreviewZoom(1);
     };
 
     const rotatePreview = (direction) => {
         setPreviewRotation((previewRotation + (direction === 'cw' ? 90 : -90)) % 360);
+    };
+
+    const handleZoom = (delta) => {
+        setPreviewZoom(prev => Math.min(Math.max(prev + delta, 0.5), 4));
+    };
+
+    const handleWheel = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.2 : 0.2;
+        handleZoom(delta);
     };
 
     const handleSave = () => {
@@ -114,7 +135,7 @@ export default function AnalysisUploader({ patientId }) {
         // Reset form
         setFiles([]);
         setAnalysisType('');
-        setAnalysisDate(new Date().toISOString().split('T')[0]);
+        setAnalysisDate(getLocalDateString());
         setNotes('');
     };
 
@@ -303,12 +324,30 @@ export default function AnalysisUploader({ patientId }) {
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 bg-slate-900/80 rounded-t-xl">
-                            <span className="text-white font-medium truncate max-w-[60%]">
+                            <span className="text-white font-medium truncate max-w-[50%]">
                                 {previewFile.name}
                             </span>
                             <div className="flex items-center gap-2">
                                 {isImage(previewFile.type) && (
                                     <>
+                                        <button
+                                            onClick={() => handleZoom(-0.25)}
+                                            className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                            title="Alejar"
+                                        >
+                                            <ZoomOut className="w-5 h-5" />
+                                        </button>
+                                        <span className="text-white text-sm font-mono min-w-[50px] text-center">
+                                            {Math.round(previewZoom * 100)}%
+                                        </span>
+                                        <button
+                                            onClick={() => handleZoom(0.25)}
+                                            className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                            title="Acercar"
+                                        >
+                                            <ZoomIn className="w-5 h-5" />
+                                        </button>
+                                        <div className="w-px h-6 bg-white/30 mx-1"></div>
                                         <button
                                             onClick={() => rotatePreview('ccw')}
                                             className="p-2 hover:bg-white/20 rounded-lg text-white transition-colors"
@@ -335,13 +374,20 @@ export default function AnalysisUploader({ patientId }) {
                         </div>
 
                         {/* Preview Content */}
-                        <div className="flex-1 bg-slate-800 rounded-b-xl overflow-hidden flex items-center justify-center p-4">
+                        <div
+                            className="flex-1 bg-slate-800 rounded-b-xl overflow-auto flex items-center justify-center p-4"
+                            onWheel={isImage(previewFile.type) ? handleWheel : undefined}
+                        >
                             {isImage(previewFile.type) ? (
                                 <img
                                     src={previewFile.data}
                                     alt={previewFile.name}
-                                    className="max-w-full max-h-[70vh] object-contain transition-transform duration-300"
-                                    style={{ transform: `rotate(${previewRotation}deg)` }}
+                                    className="object-contain transition-transform duration-200 cursor-zoom-in"
+                                    style={{
+                                        transform: `rotate(${previewRotation}deg) scale(${previewZoom})`,
+                                        maxWidth: previewZoom > 1 ? 'none' : '100%',
+                                        maxHeight: previewZoom > 1 ? 'none' : '70vh'
+                                    }}
                                 />
                             ) : isPDF(previewFile.type) ? (
                                 <iframe

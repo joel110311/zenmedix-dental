@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Printer, ArrowLeft } from 'lucide-react';
+import { Printer, ArrowLeft, FlaskConical } from 'lucide-react';
 import { api } from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
@@ -11,6 +11,7 @@ export default function PrintHistory() {
     const [loading, setLoading] = useState(true);
     const [patient, setPatient] = useState(null);
     const [consultations, setConsultations] = useState([]);
+    const [labResults, setLabResults] = useState([]);
 
     useEffect(() => {
         loadData();
@@ -22,6 +23,10 @@ export default function PrintHistory() {
             setPatient(patientData);
             const consultsData = await api.consultations.listByPatient(id);
             setConsultations(consultsData);
+
+            // Load lab results from localStorage
+            const storedResults = localStorage.getItem(`medflow_labresults_${id}`);
+            setLabResults(storedResults ? JSON.parse(storedResults) : []);
         } catch (error) {
             navigate('/pacientes');
         } finally {
@@ -97,7 +102,7 @@ export default function PrintHistory() {
                         </section>
                     )}
 
-                    <section>
+                    <section className="mb-8">
                         <h2 className="text-lg font-bold bg-slate-100 p-2 border-l-4 border-slate-800 mb-4 uppercase">Historial de Consultas</h2>
 
                         {consultations.length === 0 ? (
@@ -159,6 +164,40 @@ export default function PrintHistory() {
                             </div>
                         )}
                     </section>
+
+                    {/* Clinical Studies Section */}
+                    {labResults.length > 0 && (
+                        <section className="mb-8">
+                            <h2 className="text-lg font-bold bg-slate-100 p-2 border-l-4 border-purple-600 mb-4 uppercase flex items-center gap-2">
+                                <FlaskConical className="w-5 h-5 text-purple-600" />
+                                Estudios Clínicos Realizados
+                            </h2>
+                            <div className="space-y-4">
+                                {labResults.map((result, idx) => (
+                                    <div key={result.id || idx} className="border-b border-slate-200 pb-3 break-inside-avoid">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <h3 className="font-bold text-sm text-purple-700">{result.type}</h3>
+                                            <span className="text-xs text-slate-500">
+                                                {new Date(result.date).toLocaleDateString('es-ES', {
+                                                    year: 'numeric', month: 'long', day: 'numeric'
+                                                })}
+                                            </span>
+                                        </div>
+                                        {result.notes && (
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                <span className="font-medium">Observaciones:</span> {result.notes}
+                                            </p>
+                                        )}
+                                        {(result.files?.length > 0 || result.attachments?.length > 0) && (
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                📎 {result.files?.length || result.attachments?.length} archivo(s) adjunto(s)
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
 
                     <footer className="mt-16 text-center text-xs text-slate-400">
                         <p>Generado por ZenMedix el {new Date().toLocaleDateString()} a las {new Date().toLocaleTimeString()}</p>
