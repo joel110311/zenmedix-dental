@@ -143,7 +143,10 @@ export const api = {
                 clinicId: r.clinic,
                 patient: r.expand?.patient,
                 doctor: r.expand?.doctor,
-                clinic: r.expand?.clinic
+                clinic: r.expand?.clinic,
+                // Helper fields for calendar display
+                patientName: r.expand?.patient ? `${r.expand.patient.firstName} ${r.expand.patient.lastName}` : 'Paciente Desconocido',
+                phone: r.expand?.patient?.phone || ''
             }));
         },
 

@@ -111,11 +111,10 @@ export default function AppointmentsPage() {
         try {
             try {
                 // Fetch independently to handle individual failures (e.g. 403 on resources)
-                const [apptsResult, ptsResult, resResult, usersResult] = await Promise.allSettled([
+                const [apptsResult, ptsResult, resResult] = await Promise.allSettled([
                     api.appointments.list(),
                     api.patients.list(),
-                    dentalService.getResources(),
-                    api.users.list()
+                    dentalService.getResources()
                 ]);
 
                 // Handle Appointments
@@ -142,13 +141,9 @@ export default function AppointmentsPage() {
                     setResources(RESOURCES_FALLBACK);
                 }
 
-                // Handle Doctors (Users with role 'medico')
-                if (usersResult.status === 'fulfilled') {
-                    const allUsers = usersResult.value;
-                    const medics = allUsers.filter(u => u.role === 'medico');
-                    setDoctors(medics);
-                } else {
-                    console.warn('Error fetching users:', usersResult.reason);
+                // Use doctors from settings (Config)
+                if (settings.doctors && settings.doctors.length > 0) {
+                    setDoctors(settings.doctors);
                 }
 
             } catch (error) {
