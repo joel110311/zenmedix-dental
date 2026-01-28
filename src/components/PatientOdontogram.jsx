@@ -79,7 +79,7 @@ export default function PatientOdontogram({
             setIsPaymentModalOpen(false);
 
             // Navigate to print view (new tab preferably for print flow)
-            window.open(`/print/budget/${newBudget.id}`, '_blank');
+            window.open(`/imprimir/presupuesto/${newBudget.id}`, '_blank');
             navigate(`/pacientes/${patientId}/presupuestos`); // Go to budgets list
 
             // Clear
