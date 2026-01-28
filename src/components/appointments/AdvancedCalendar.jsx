@@ -70,7 +70,10 @@ const AdvancedCalendar = ({
                     }
 
                     // Parse start date safely
-                    const dateStr = appt.date.includes('T') ? appt.date.split('T')[0] : appt.date;
+                    let dateStr = appt.date;
+                    if (dateStr.includes('T')) dateStr = dateStr.split('T')[0];
+                    else if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
+
                     const startInfo = `${dateStr}T${appt.time}`;
                     const start = new Date(startInfo);
 
@@ -98,6 +101,36 @@ const AdvancedCalendar = ({
             })
             .filter(Boolean);
     }, [appointments]);
+
+    // Custom render for List View to match screenshot
+    const renderEventContent = (eventInfo) => {
+        if (eventInfo.view.type === 'listDay' || eventInfo.view.type.includes('list')) {
+            const appt = eventInfo.event.extendedProps;
+            const doctorName = appt.doctor?.name || appt.doctorId || 'Sin asignar';
+
+            return (
+                <div className="flex items-center justify-between w-full p-2">
+                    <div className="flex-1">
+                        <span className="font-bold text-slate-800 dark:text-white mr-2">{appt.patientName}</span>
+                        <div className="text-sm text-slate-500">Tel: {appt.phone}</div>
+                    </div>
+                    <div className="flex-1 text-slate-600 dark:text-slate-300">
+                        {doctorName}
+                    </div>
+                    <div className="flex-1">
+                        <span className={`px-2 py-1 rounded-full text-xs text-white uppercase bg-[${eventInfo.event.backgroundColor}]`}>
+                            {appt.status}
+                        </span>
+                    </div>
+                    {/* Situación / Acciones placeholders */}
+                    <div className="flex gap-2">
+                        <button className="px-3 py-1 bg-green-600 text-white rounded text-xs">Diagnóstico</button>
+                    </div>
+                </div>
+            );
+        }
+        return null; // Default render for grid views
+    };
 
     const handleDateSelect = (selectInfo) => {
         // Convert to our format
@@ -172,6 +205,7 @@ const AdvancedCalendar = ({
                 slotDuration="00:15:00" // 15 min slots for precision
                 slotLabelInterval="01:00"
                 nowIndicator={true}
+                eventContent={renderEventContent}
                 businessHours={{
                     daysOfWeek: [1, 2, 3, 4, 5, 6], // Mon-Sat
                     startTime: '08:00',
