@@ -63,6 +63,7 @@ export default function AppointmentsPage() {
     const [filteredDoctorId, setFilteredDoctorId] = useState('all');
     const [filteredClinicId, setFilteredClinicId] = useState('all');
     const [filteredResourceId, setFilteredResourceId] = useState('all');
+    const [doctors, setDoctors] = useState([]); // State for doctors list
 
     const displayedAppointments = useMemo(() => {
         let filtered = appointments;
@@ -110,10 +111,11 @@ export default function AppointmentsPage() {
         try {
             try {
                 // Fetch independently to handle individual failures (e.g. 403 on resources)
-                const [apptsResult, ptsResult, resResult] = await Promise.allSettled([
+                const [apptsResult, ptsResult, resResult, usersResult] = await Promise.allSettled([
                     api.appointments.list(),
                     api.patients.list(),
-                    dentalService.getResources()
+                    dentalService.getResources(),
+                    api.users.list()
                 ]);
 
                 // Handle Appointments
@@ -138,6 +140,15 @@ export default function AppointmentsPage() {
                 } else {
                     console.warn('Using fallback resources due to fetch error:', resResult.reason);
                     setResources(RESOURCES_FALLBACK);
+                }
+
+                // Handle Doctors (Users with role 'medico')
+                if (usersResult.status === 'fulfilled') {
+                    const allUsers = usersResult.value;
+                    const medics = allUsers.filter(u => u.role === 'medico');
+                    setDoctors(medics);
+                } else {
+                    console.warn('Error fetching users:', usersResult.reason);
                 }
 
             } catch (error) {
@@ -424,6 +435,7 @@ export default function AppointmentsPage() {
                                 }
                             }}
                             clinics={settings.clinics}
+                            doctors={doctors}
                         />
                     </div>
                 </div>
