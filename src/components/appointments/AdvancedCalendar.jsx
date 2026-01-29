@@ -154,10 +154,11 @@ const AdvancedCalendar = ({
     const renderEventContent = (eventInfo) => {
         const appt = eventInfo.event.extendedProps;
         const bgColor = eventInfo.event.backgroundColor;
-        const doctorName = appt.doctor?.name || (appt.doctorId ? 'Doc' : 'Sin asignar');
+        // Use doctorName from api.js (extracted from notes or expanded relation)
+        const doctorName = appt.doctorName || appt.doctor?.name || 'Sin asignar';
         const timeStr = eventInfo.event.start ? eventInfo.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
 
-        // For LIST views - table style
+        // For LIST views - table style with reason column
         if (eventInfo.view.type === 'listDay' || eventInfo.view.type.includes('list')) {
             return (
                 <div className="flex items-center justify-between w-full p-2">
@@ -165,6 +166,11 @@ const AdvancedCalendar = ({
                         <span className="font-bold text-slate-800 dark:text-white mr-2">{appt.patientName || 'Paciente'}</span>
                         <div className="text-sm text-slate-500 dark:text-slate-400">Tel: {appt.phone || 'N/A'}</div>
                     </div>
+                    {/* Reason/Motivo Column */}
+                    <div className="flex-1 text-slate-600 dark:text-slate-300">
+                        {appt.reason || 'Sin motivo'}
+                    </div>
+                    {/* Doctor Column */}
                     <div className="flex-1 text-slate-600 dark:text-slate-300">
                         {doctorName}
                     </div>

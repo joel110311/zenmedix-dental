@@ -136,18 +136,30 @@ export const api = {
                 sort: '-created',
                 expand: 'patient,doctor,clinic'
             });
-            return records.map(r => ({
-                ...r,
-                patientId: r.patient, // Preserve ID explicitly
-                doctorId: r.doctor,
-                clinicId: r.clinic,
-                patient: r.expand?.patient,
-                doctor: r.expand?.doctor,
-                clinic: r.expand?.clinic,
-                // Helper fields for calendar display
-                patientName: r.expand?.patient ? `${r.expand.patient.firstName} ${r.expand.patient.lastName}` : 'Paciente Desconocido',
-                phone: r.expand?.patient?.phone || ''
-            }));
+            return records.map(r => {
+                // Extract doctor name from notes if not a PB relation
+                let doctorName = null;
+                if (r.expand?.doctor?.name) {
+                    doctorName = r.expand.doctor.name;
+                } else if (r.notes && r.notes.includes('[Dr:')) {
+                    const match = r.notes.match(/\[Dr:\s*([^\]]+)\]/);
+                    if (match) doctorName = match[1].trim();
+                }
+
+                return {
+                    ...r,
+                    patientId: r.patient,
+                    doctorId: r.doctor,
+                    clinicId: r.clinic,
+                    patient: r.expand?.patient,
+                    doctor: r.expand?.doctor || (doctorName ? { name: doctorName } : null),
+                    clinic: r.expand?.clinic,
+                    // Helper fields for calendar display
+                    patientName: r.expand?.patient ? `${r.expand.patient.firstName} ${r.expand.patient.lastName}` : (r.patientName || 'Paciente Desconocido'),
+                    phone: r.expand?.patient?.phone || r.phone || '',
+                    doctorName: doctorName || 'Sin asignar'
+                };
+            });
         },
 
         listByDate: async (date) => {
