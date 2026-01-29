@@ -137,13 +137,10 @@ export const api = {
                 expand: 'patient,doctor,clinic'
             });
             return records.map(r => {
-                // Extract doctor name from notes if not a PB relation
-                let doctorName = null;
-                if (r.expand?.doctor?.name) {
+                // Extract doctor name from doctorName field or relation
+                let doctorName = r.doctorName;
+                if (!doctorName && r.expand?.doctor?.name) {
                     doctorName = r.expand.doctor.name;
-                } else if (r.notes && r.notes.includes('[Dr:')) {
-                    const match = r.notes.match(/\[Dr:\s*([^\]]+)\]/);
-                    if (match) doctorName = match[1].trim();
                 }
 
                 return {
@@ -192,11 +189,11 @@ export const api = {
 
             // Store doctor name directly - works for both PocketBase relations and settings-based doctors
             if (data.doctorId) {
-                // If it's a valid PB ID, set the relation
-                if (data.doctorId.length === 15) {
-                    appointmentData.doctor = data.doctorId;
-                }
-                // Always store doctorName if provided from settings
+                // Try to set the relation normally, even if it's a short ID from settings
+                // PocketBase might ignore it if it doesn't match a record, but we also save doctorName
+                appointmentData.doctor = data.doctorId;
+
+                // Always store doctorName if provided from settings or data
                 if (data.doctor?.name) {
                     appointmentData.doctorName = data.doctor.name;
                 }

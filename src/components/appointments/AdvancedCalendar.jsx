@@ -176,6 +176,10 @@ const AdvancedCalendar = ({
             } else if (patientBalance > 0) {
                 situacionLabel = 'Adeudo';
                 situacionColor = '#ef4444'; // red-500
+            } else {
+                // Balance <= 0
+                situacionLabel = 'Adeudo';
+                situacionColor = '#84cc16'; // lime-500
             }
 
             // Get formatted time range
@@ -214,12 +218,12 @@ const AdvancedCalendar = ({
                     </div>
                     {/* Situación */}
                     <div>
-                        <button
-                            className="px-3 py-1.5 rounded text-xs font-semibold text-white"
+                        <span
+                            className="px-3 py-1.5 rounded text-xs font-bold text-white uppercase text-center block w-full"
                             style={{ backgroundColor: situacionColor }}
                         >
                             {situacionLabel}
-                        </button>
+                        </span>
                     </div>
                 </div>
             );
