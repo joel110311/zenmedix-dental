@@ -320,6 +320,8 @@ const AdvancedCalendar = ({
         }));
     };
 
+    const [currentView, setCurrentView] = useState('timeGridWeek');
+
     return (
         <div className="flex flex-col md:flex-row gap-4 h-[800px]">
             {/* Sidebar Filters */}
@@ -336,8 +338,8 @@ const AdvancedCalendar = ({
                         className="w-full p-2 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                         <option value="all">Todos los dentistas</option>
-                        {availableDoctors.map(doc => (
-                            <option key={doc.id} value={doc.id}>
+                        {availableDoctors.map((doc, idx) => (
+                            <option key={idx} value={doc.id || doc.name}>
                                 {doc.name}
                             </option>
                         ))}
@@ -430,8 +432,23 @@ const AdvancedCalendar = ({
             </div>
 
             {/* Calendar Container */}
-            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 h-full overflow-hidden">
+            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 h-full overflow-hidden flex flex-col">
                 <style>{eventStyles}</style>
+
+                {/* Custom Header for List View */}
+                {currentView && currentView.includes('list') && (
+                    <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-[#2a2f38] mb-0 pb-2">
+                        <div className="grid grid-cols-6 gap-4 w-full px-5 py-2 text-xs font-bold text-slate-500 uppercase">
+                            <div>Hora</div>
+                            <div>Paciente</div>
+                            <div>Motivo de Consulta</div>
+                            <div>Doctor</div>
+                            <div>Estado</div>
+                            <div className="text-center">Situación</div>
+                        </div>
+                    </div>
+                )}
+
                 <FullCalendar
                     ref={calendarRef}
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -471,6 +488,7 @@ const AdvancedCalendar = ({
                         startTime: '08:00',
                         endTime: '20:00',
                     }}
+                    datesSet={(arg) => setCurrentView(arg.view.type)}
                 />
             </div>
         </div>

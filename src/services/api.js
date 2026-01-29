@@ -189,9 +189,11 @@ export const api = {
 
             // Store doctor name directly - works for both PocketBase relations and settings-based doctors
             if (data.doctorId) {
-                // Try to set the relation normally, even if it's a short ID from settings
-                // PocketBase might ignore it if it doesn't match a record, but we also save doctorName
-                appointmentData.doctor = data.doctorId;
+                // ONLY set the relation if it's a valid PB ID (15 chars)
+                // Sending an invalid ID (like a short ID from settings) causes a 400 validation error
+                if (data.doctorId.length === 15) {
+                    appointmentData.doctor = data.doctorId;
+                }
 
                 // Always store doctorName if provided from settings or data
                 if (data.doctor?.name) {
