@@ -7,30 +7,41 @@ import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { Filter, User } from 'lucide-react';
 
-// Styles for custom events
+// Styles for custom events - card style
 const eventStyles = `
   .fc-event {
     cursor: pointer;
-    border: none;
-    padding: 2px;
+    border: none !important;
+    background-color: transparent !important;
+    padding: 0 !important;
     font-size: 0.85rem;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: none;
     transition: transform 0.1s, box-shadow 0.1s;
   }
   .fc-event:hover {
-    transform: scale(1.01);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    transform: scale(1.02);
     z-index: 50;
   }
   .fc-timegrid-event .fc-event-main {
-    padding: 2px 4px;
+    padding: 0 !important;
+    overflow: visible;
+  }
+  .fc-timegrid-event-harness {
+    overflow: visible !important;
   }
   .fc-timegrid-slot {
-    height: 40px !important; 
+    height: 48px !important; 
   }
   .fc-list-event-dot {
     border-width: 5px !important;
+  }
+  /* Remove default title text since we render our own */
+  .fc-event-title-container,
+  .fc-event-title {
+    display: none;
+  }
+  .fc-event-time {
+    display: none;
   }
 `;
 
@@ -139,18 +150,20 @@ const AdvancedCalendar = ({
             .filter(Boolean);
     }, [appointments, selectedDoctor, selectedStatuses]);
 
-    // Custom List View Render
+    // Custom Event Render for all views - Card Style like reference
     const renderEventContent = (eventInfo) => {
-        if (eventInfo.view.type === 'listDay' || eventInfo.view.type.includes('list')) {
-            const appt = eventInfo.event.extendedProps;
-            const doctorName = appt.doctor?.name || (appt.doctorId ? 'Doc: ' + appt.doctorId.substr(0, 4) : 'Sin asignar');
-            const bgColor = eventInfo.event.backgroundColor;
+        const appt = eventInfo.event.extendedProps;
+        const bgColor = eventInfo.event.backgroundColor;
+        const doctorName = appt.doctor?.name || (appt.doctorId ? 'Doc' : 'Sin asignar');
+        const timeStr = eventInfo.event.start ? eventInfo.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
 
+        // For LIST views - table style
+        if (eventInfo.view.type === 'listDay' || eventInfo.view.type.includes('list')) {
             return (
                 <div className="flex items-center justify-between w-full p-2">
                     <div className="flex-1">
-                        <span className="font-bold text-slate-800 dark:text-white mr-2">{appt.patientName}</span>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Tel: {appt.phone}</div>
+                        <span className="font-bold text-slate-800 dark:text-white mr-2">{appt.patientName || 'Paciente'}</span>
+                        <div className="text-sm text-slate-500 dark:text-slate-400">Tel: {appt.phone || 'N/A'}</div>
                     </div>
                     <div className="flex-1 text-slate-600 dark:text-slate-300">
                         {doctorName}
@@ -171,7 +184,57 @@ const AdvancedCalendar = ({
                 </div>
             );
         }
-        return null;
+
+        // For GRID views (timeGrid, dayGrid) - Card Style with left border
+        return (
+            <div
+                className="h-full w-full overflow-hidden"
+                style={{
+                    backgroundColor: '#eff6ff', // Light blue
+                    borderLeft: `4px solid ${bgColor}`,
+                    borderRadius: '6px',
+                    padding: '4px 6px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px'
+                }}
+            >
+                {/* Patient Name - Bold */}
+                <div style={{ fontWeight: '700', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.2' }}>
+                    {appt.patientName || 'Paciente'}
+                </div>
+                {/* Time */}
+                <div style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '500' }}>
+                    {timeStr}
+                </div>
+                {/* Service/Reason */}
+                {appt.reason && (
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {appt.reason}
+                    </div>
+                )}
+                {/* Doctor with avatar placeholder */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: 'auto' }}>
+                    <div
+                        style={{
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            backgroundColor: bgColor,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.55rem',
+                            color: '#fff',
+                            flexShrink: 0
+                        }}
+                    >
+                        {doctorName.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: '#475569' }}>{doctorName}</span>
+                </div>
+            </div>
+        );
     };
 
     const handleDateSelect = (selectInfo) => {
