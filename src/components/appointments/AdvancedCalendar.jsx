@@ -154,37 +154,71 @@ const AdvancedCalendar = ({
     const renderEventContent = (eventInfo) => {
         const appt = eventInfo.event.extendedProps;
         const bgColor = eventInfo.event.backgroundColor;
-        // Use doctorName from api.js (extracted from notes or expanded relation)
+        // Use doctorName from api.js (stored directly or from expanded relation)
         const doctorName = appt.doctorName || appt.doctor?.name || 'Sin asignar';
         const timeStr = eventInfo.event.start ? eventInfo.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
 
-        // For LIST views - table style with reason column
+        // For LIST views - table style with columns: Hora, Paciente, Motivo, Doctor, Estado, Situación
         if (eventInfo.view.type === 'listDay' || eventInfo.view.type.includes('list')) {
+            // Situación logic:
+            // - First appointment OR no patient record → "Diagnóstico" (lime green)
+            // - Patient has balance > 0 (debt) → "Adeudo" (red)
+            // - Patient has balance ≤ 0 → "Adeudo" (lime green)
+            const patientBalance = appt.patient?.balance ?? 0;
+            const isFirstAppointment = !appt.patient || appt.isFirstAppointment;
+
+            let situacionLabel = 'Adeudo';
+            let situacionColor = '#84cc16'; // lime-500
+
+            if (isFirstAppointment) {
+                situacionLabel = 'Diagnóstico';
+                situacionColor = '#84cc16'; // lime-500
+            } else if (patientBalance > 0) {
+                situacionLabel = 'Adeudo';
+                situacionColor = '#ef4444'; // red-500
+            }
+
+            // Get formatted time range
+            const startTime = eventInfo.event.start?.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) || '--:--';
+            const endTime = eventInfo.event.end?.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) || '--:--';
+
             return (
-                <div className="flex items-center justify-between w-full p-2">
-                    <div className="flex-1">
-                        <span className="font-bold text-slate-800 dark:text-white mr-2">{appt.patientName || 'Paciente'}</span>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Tel: {appt.phone || 'N/A'}</div>
+                <div className="grid grid-cols-6 gap-4 w-full p-3 items-center">
+                    {/* Hora */}
+                    <div className="text-sm">
+                        <div className="font-medium text-slate-800 dark:text-white">{startTime}</div>
+                        <div className="text-xs text-slate-500">↓</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">{endTime}</div>
                     </div>
-                    {/* Reason/Motivo Column */}
-                    <div className="flex-1 text-slate-600 dark:text-slate-300">
+                    {/* Paciente */}
+                    <div>
+                        <div className="font-bold text-slate-800 dark:text-white uppercase">{appt.patientName || 'Paciente'}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">📞 {appt.phone || 'N/A'}</div>
+                    </div>
+                    {/* Motivo de Consulta */}
+                    <div className="text-sm text-slate-600 dark:text-slate-300">
                         {appt.reason || 'Sin motivo'}
                     </div>
-                    {/* Doctor Column */}
-                    <div className="flex-1 text-slate-600 dark:text-slate-300">
+                    {/* Doctor */}
+                    <div className="text-sm text-slate-600 dark:text-slate-300">
                         {doctorName}
                     </div>
-                    <div className="flex-1">
+                    {/* Estado */}
+                    <div>
                         <span
-                            className="px-2 py-1 rounded-full text-xs text-white uppercase"
-                            style={{ backgroundColor: bgColor }}
+                            className="px-2 py-1 rounded text-xs font-medium uppercase"
+                            style={{ backgroundColor: bgColor, color: '#fff' }}
                         >
                             {appt.status === 'scheduled' ? 'Pendiente' : appt.status}
                         </span>
                     </div>
-                    <div className="flex gap-2">
-                        <button className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors">
-                            Diagnóstico
+                    {/* Situación */}
+                    <div>
+                        <button
+                            className="px-3 py-1.5 rounded text-xs font-semibold text-white"
+                            style={{ backgroundColor: situacionColor }}
+                        >
+                            {situacionLabel}
                         </button>
                     </div>
                 </div>

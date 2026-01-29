@@ -179,7 +179,7 @@ export const api = {
                 date: new Date(data.date).toISOString(),
                 time: data.time,
                 reason: data.reason || 'Consulta General',
-                notes: data.notes,
+                notes: data.notes || '',
                 status: data.status || 'scheduled',
                 source: data.source || 'manual'
             };
@@ -190,16 +190,15 @@ export const api = {
             if (data.clinicId && data.clinicId.trim()) appointmentData.clinic = data.clinicId;
             if (data.resourceId) appointmentData.resource_id = data.resourceId;
 
-            // FIX: Only send doctor relation if ID is valid (15 chars), otherwise append to notes
+            // Store doctor name directly - works for both PocketBase relations and settings-based doctors
             if (data.doctorId) {
+                // If it's a valid PB ID, set the relation
                 if (data.doctorId.length === 15) {
                     appointmentData.doctor = data.doctorId;
-                } else if (data.doctor?.name) {
-                    // Fallback for settings-based doctors: add to notes
-                    const doctorNote = `[Dr: ${data.doctor.name}]`;
-                    appointmentData.notes = appointmentData.notes
-                        ? `${appointmentData.notes}\n${doctorNote}`
-                        : doctorNote;
+                }
+                // Always store doctorName if provided from settings
+                if (data.doctor?.name) {
+                    appointmentData.doctorName = data.doctor.name;
                 }
             }
 

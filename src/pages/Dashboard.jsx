@@ -335,10 +335,11 @@ export default function Dashboard() {
                         ) : (
                             <div className="overflow-x-auto">
                                 {/* Table Header */}
-                                <div className="grid grid-cols-[40px_50px_minmax(120px,1fr)_100px_95px_75px] gap-3 text-xs font-medium text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-[#2a2f38]">
+                                <div className="grid grid-cols-[40px_50px_minmax(100px,1fr)_minmax(120px,1fr)_90px_85px_75px] gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-[#2a2f38]">
                                     <span>Pac</span>
                                     <span>Hora</span>
                                     <span>Nombre</span>
+                                    <span>Médico</span>
                                     <span>Teléfono</span>
                                     <span>Estado</span>
                                     <span>Acciones</span>
@@ -346,66 +347,80 @@ export default function Dashboard() {
 
                                 {/* Table Body */}
                                 <div className="divide-y divide-slate-100 dark:divide-[#2a2f38]">
-                                    {[...appointments].sort((a, b) => (a.time || '').localeCompare(b.time || '')).map((apt, idx) => (
-                                        <div key={idx} className="grid grid-cols-[40px_50px_minmax(120px,1fr)_100px_95px_75px] gap-3 py-3 items-center hover:bg-slate-50 dark:hover:bg-[#22262e] transition-colors">
-                                            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{idx + 1}</span>
-                                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{apt.time || '--:--'}</span>
-                                            <span className="text-sm font-medium text-slate-800 dark:text-white truncate flex items-center gap-2">
-                                                {apt.patientName || 'Sin nombre'}
-                                                {apt.patient?.balance > 0 && (
-                                                    <span className="w-2 h-2 rounded-full bg-red-500 ring-1 ring-white" title={`Deuda: $${apt.patient.balance}`} />
-                                                )}
-                                                {apt.patient?.balance <= 0 && (
-                                                    <span className="w-2 h-2 rounded-full bg-green-500 ring-1 ring-white" title="Al corriente" />
-                                                )}
-                                            </span>
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">{apt.phone || 'N/A'}</span>
-                                            {(() => {
-                                                switch (apt.status) {
-                                                    case 'completed':
-                                                    case 'attended':
-                                                        return <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">Confirmada</span>;
-                                                    case 'cancelled':
-                                                        return <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">Cancelada</span>;
-                                                    case 'noShow':
-                                                        return <span className="bg-orange-100 text-orange-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">No llegó</span>;
-                                                    default:
-                                                        return <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">Pendiente</span>;
-                                                }
-                                            })()}
-                                            <div className="flex items-center gap-2">
-                                                {apt.patientId && (
-                                                    <a
-                                                        href={`/pacientes/${apt.patientId}/historial`}
-                                                        className="p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded flex items-center gap-1"
-                                                        title="Ver expediente"
-                                                    >
-                                                        <ExternalLink className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                                {(() => {
-                                                    // Check if WhatsApp window is open (reminder sent today)
-                                                    const today = new Date().toLocaleDateString('en-CA');
-                                                    const reminderDate = apt.reminderSentAt ? apt.reminderSentAt.split('T')[0] : null;
-                                                    const isWindowOpen = apt.reminderSent && reminderDate === today;
+                                    {[...appointments].sort((a, b) => (a.time || '').localeCompare(b.time || '')).map((apt, idx) => {
+                                        // Get doctor name from various sources
+                                        let aptDoctorName = apt.doctorName || 'Sin asignar';
+                                        if (!apt.doctorName && apt.doctor && typeof apt.doctor === 'object') {
+                                            aptDoctorName = apt.doctor.name || 'Sin asignar';
+                                        }
+                                        // Fallback: check notes for legacy format
+                                        if (aptDoctorName === 'Sin asignar' && apt.notes) {
+                                            const noteMatch = apt.notes.match(/\[Dr:\s*([^\]]+)\]/);
+                                            if (noteMatch) aptDoctorName = noteMatch[1];
+                                        }
 
-                                                    return (
-                                                        <button
-                                                            type="button"
-                                                            disabled={!isWindowOpen}
-                                                            className={`p-1.5 rounded transition-colors ${isWindowOpen
-                                                                ? 'bg-green-100 hover:bg-green-200 text-green-600 cursor-pointer'
-                                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                                                }`}
-                                                            title={isWindowOpen ? 'Enviar mensaje WhatsApp' : 'WhatsApp no disponible (ventana 24h cerrada)'}
-                                                        >
-                                                            <MessageCircle className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    );
+                                        return (
+                                            <div key={idx} className="grid grid-cols-[40px_50px_minmax(100px,1fr)_minmax(120px,1fr)_90px_85px_75px] gap-2 py-3 items-center hover:bg-slate-50 dark:hover:bg-[#22262e] transition-colors">
+                                                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{idx + 1}</span>
+                                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{apt.time || '--:--'}</span>
+                                                <span className="text-sm font-medium text-slate-800 dark:text-white truncate flex items-center gap-2">
+                                                    {apt.patientName || 'Sin nombre'}
+                                                    {apt.patient?.balance > 0 && (
+                                                        <span className="w-2 h-2 rounded-full bg-red-500 ring-1 ring-white" title={`Deuda: $${apt.patient.balance}`} />
+                                                    )}
+                                                    {apt.patient?.balance <= 0 && (
+                                                        <span className="w-2 h-2 rounded-full bg-green-500 ring-1 ring-white" title="Al corriente" />
+                                                    )}
+                                                </span>
+                                                <span className="text-sm text-slate-600 dark:text-slate-400 truncate">{aptDoctorName}</span>
+                                                <span className="text-sm text-slate-600 dark:text-slate-400 truncate">{apt.phone || 'N/A'}</span>
+                                                {(() => {
+                                                    switch (apt.status) {
+                                                        case 'completed':
+                                                        case 'attended':
+                                                            return <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">Confirmada</span>;
+                                                        case 'cancelled':
+                                                            return <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">Cancelada</span>;
+                                                        case 'noShow':
+                                                            return <span className="bg-orange-100 text-orange-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">No llegó</span>;
+                                                        default:
+                                                            return <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">Pendiente</span>;
+                                                    }
                                                 })()}
+                                                <div className="flex items-center gap-2">
+                                                    {apt.patientId && (
+                                                        <a
+                                                            href={`/pacientes/${apt.patientId}/historial`}
+                                                            className="p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded flex items-center gap-1"
+                                                            title="Ver expediente"
+                                                        >
+                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                    {(() => {
+                                                        // Check if WhatsApp window is open (reminder sent today)
+                                                        const today = new Date().toLocaleDateString('en-CA');
+                                                        const reminderDate = apt.reminderSentAt ? apt.reminderSentAt.split('T')[0] : null;
+                                                        const isWindowOpen = apt.reminderSent && reminderDate === today;
+
+                                                        return (
+                                                            <button
+                                                                type="button"
+                                                                disabled={!isWindowOpen}
+                                                                className={`p-1.5 rounded transition-colors ${isWindowOpen
+                                                                    ? 'bg-green-100 hover:bg-green-200 text-green-600 cursor-pointer'
+                                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                                    }`}
+                                                                title={isWindowOpen ? 'Enviar mensaje WhatsApp' : 'WhatsApp no disponible (ventana 24h cerrada)'}
+                                                            >
+                                                                <MessageCircle className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                             </div>
