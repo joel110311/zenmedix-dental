@@ -99,7 +99,14 @@ const AdvancedCalendar = ({
             .filter(appt => {
                 // Filter by Doctor
                 if (selectedDoctor !== 'all') {
-                    const docId = appt.doctorId || (appt.doctor?.id);
+                    let docId = appt.doctorId || (appt.doctor?.id);
+
+                    // If no docId on appointment, try to find it by name in availableDoctors
+                    if (!docId && appt.doctorName) {
+                        const matchedDoc = availableDoctors.find(d => d.name === appt.doctorName);
+                        if (matchedDoc) docId = matchedDoc.id;
+                    }
+
                     if (docId !== selectedDoctor) return false;
                 }
                 // Filter by Status
