@@ -435,19 +435,6 @@ const AdvancedCalendar = ({
             <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 h-full overflow-hidden flex flex-col">
                 <style>{eventStyles}</style>
 
-                {/* Custom Header for List View */}
-                {currentView && currentView.includes('list') && (
-                    <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-[#2a2f38] mb-0 pb-2">
-                        <div className="grid grid-cols-6 gap-4 w-full px-5 py-2 text-xs font-bold text-slate-500 uppercase">
-                            <div>Hora</div>
-                            <div>Paciente</div>
-                            <div>Motivo de Consulta</div>
-                            <div>Doctor</div>
-                            <div>Estado</div>
-                            <div className="text-center">Situación</div>
-                        </div>
-                    </div>
-                )}
 
                 <FullCalendar
                     ref={calendarRef}

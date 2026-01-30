@@ -137,10 +137,13 @@ export const api = {
                 expand: 'patient,doctor,clinic'
             });
             return records.map(r => {
-                // Extract doctor name from doctorName field or relation
+                // Extract doctor name from doctorName field or relation, fallback to notes
                 let doctorName = r.doctorName;
                 if (!doctorName && r.expand?.doctor?.name) {
                     doctorName = r.expand.doctor.name;
+                } else if (!doctorName && r.notes && r.notes.includes('[Dr:')) {
+                    const match = r.notes.match(/\[Dr:\s*([^\]]+)\]/);
+                    if (match) doctorName = match[1].trim();
                 }
 
                 return {
@@ -193,9 +196,17 @@ export const api = {
                 // Sending an invalid ID (like a short ID from settings) causes a 400 validation error
                 if (data.doctorId.length === 15) {
                     appointmentData.doctor = data.doctorId;
+                } else if (data.doctor?.name) {
+                    // Fallback for settings-based doctors without valid PB IDs:
+                    // Append doctor name to notes to ensure persistence since we can't use the relation field
+                    // and custom fields like 'doctorName' might be ignored by the backend schema.
+                    const doctorTag = `[Dr: ${data.doctor.name}]`;
+                    appointmentData.notes = appointmentData.notes
+                        ? `${appointmentData.notes} ${doctorTag}`
+                        : doctorTag;
                 }
 
-                // Always store doctorName if provided from settings or data
+                // Always store doctorName if provided, just in case the schema supports it
                 if (data.doctor?.name) {
                     appointmentData.doctorName = data.doctor.name;
                 }
