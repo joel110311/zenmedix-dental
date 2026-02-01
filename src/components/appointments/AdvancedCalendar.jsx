@@ -240,7 +240,7 @@ const AdvancedCalendar = ({
                 situacionColor = '#ef4444'; // red-500
             } else {
                 // Balance <= 0
-                situacionLabel = 'Adeudo';
+                situacionLabel = 'Sin Adeudo';
                 situacionColor = '#84cc16'; // lime-500
             }
 
