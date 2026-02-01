@@ -266,13 +266,18 @@ export default function SettingsPage() {
     // Resources & Treatments State
     const [resources, setResources] = useState([]);
     const [treatments, setTreatments] = useState([]);
+    const [resourceSchedules, setResourceSchedules] = useState({}); // { resourceId: { start: '08:00', end: '20:00', active: true } }
+    const [showWeekends, setShowWeekends] = useState(false); // Global setting for weekends
     const [newResourceName, setNewResourceName] = useState('');
     const [newTreatmentName, setNewTreatmentName] = useState('');
     const [newTreatmentPrice, setNewTreatmentPrice] = useState('');
     const [newTreatmentCategory, setNewTreatmentCategory] = useState('Preventiva');
 
     useEffect(() => {
-        if (activeSection === 'clinic') loadResources(); // Load resources when in clinic tab
+        if (activeSection === 'clinic') {
+            loadResources();
+            loadSchedules();
+        }
         if (activeSection === 'treatments') loadTreatments();
     }, [activeSection]);
 
@@ -282,6 +287,40 @@ export default function SettingsPage() {
             setResources(data);
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    const loadSchedules = async () => {
+        try {
+            const schedules = await api.config.get('resource_schedules');
+            if (schedules) setResourceSchedules(schedules);
+
+            const weekends = await api.config.get('show_weekends');
+            setShowWeekends(!!weekends);
+        } catch (error) {
+            console.error('Error loading schedules', error);
+        }
+    };
+
+    const handleScheduleChange = (resourceId, field, value) => {
+        setResourceSchedules(prev => ({
+            ...prev,
+            [resourceId]: {
+                ...prev[resourceId],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleSaveSchedules = async () => {
+        try {
+            await api.config.set('resource_schedules', resourceSchedules);
+            await api.config.set('show_weekends', showWeekends);
+            toast.success('Horarios y configuración guardados');
+            // Optional: trigger a reload or context update if needed
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al guardar horarios');
         }
     };
 
@@ -839,7 +878,11 @@ export default function SettingsPage() {
                         </Card>
 
                         {/* Resources Section (Moved here) */}
-                        <Card title="Consultorios / Sillones">
+                        <Card title="Consultorios / Sillones y Horarios">
+                            <p className="text-sm text-slate-500 mb-4">
+                                Configura los consultorios y sus horarios de atención. El calendario global se ajustará automáticamente para mostrar el rango que cubra a todos los consultorios activos.
+                            </p>
+
                             <div className="flex gap-2 mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
                                 <input
                                     type="text"
@@ -850,19 +893,67 @@ export default function SettingsPage() {
                                 />
                                 <Button onClick={handleAddResource}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
                             </div>
-                            <div className="space-y-2">
-                                {resources.map(r => (
-                                    <div key={r.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-slate-700">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-3 h-3 rounded-full ${r.active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
-                                            <span className="font-medium text-slate-800 dark:text-white">{r.name}</span>
+
+                            <div className="space-y-3 mb-6">
+                                {resources.map(r => {
+                                    const schedule = resourceSchedules[r.id] || { start: '09:00', end: '18:00' };
+                                    return (
+                                        <div key={r.id} className="p-3 border rounded-lg dark:border-slate-700 bg-white dark:bg-slate-800">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-3 h-3 rounded-full ${r.active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                                                    <span className="font-medium text-slate-800 dark:text-white">{r.name}</span>
+                                                </div>
+                                                <Button variant="ghost" size="sm" onClick={() => handleDeleteResource(r.id)} className="text-red-500">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+
+                                            {/* Schedule Inputs */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-center bg-slate-50 dark:bg-slate-900/50 p-2 rounded">
+                                                <div className="col-span-2 sm:col-span-1">
+                                                    <label className="text-xs text-slate-500 block mb-1">Hora Inicio</label>
+                                                    <input
+                                                        type="time"
+                                                        value={schedule.start || '09:00'}
+                                                        onChange={(e) => handleScheduleChange(r.id, 'start', e.target.value)}
+                                                        className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800"
+                                                    />
+                                                </div>
+                                                <div className="col-span-2 sm:col-span-1">
+                                                    <label className="text-xs text-slate-500 block mb-1">Hora Fin</label>
+                                                    <input
+                                                        type="time"
+                                                        value={schedule.end || '18:00'}
+                                                        onChange={(e) => handleScheduleChange(r.id, 'end', e.target.value)}
+                                                        className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800"
+                                                    />
+                                                </div>
+                                                <div className="col-span-2 sm:col-span-2 flex items-center gap-2 text-xs text-slate-400">
+                                                    <Info className="w-3 h-3" />
+                                                    <span>Define el horario de disponibilidad</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteResource(r.id)} className="text-red-500">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                                 {resources.length === 0 && <p className="text-center text-slate-500 py-4">No hay consultorios registrados</p>}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={showWeekends}
+                                        onChange={(e) => setShowWeekends(e.target.checked)}
+                                        className="w-4 h-4 rounded text-primary border-slate-300 focus:ring-primary"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Mostrar Fines de Semana en Calendario</span>
+                                </label>
+
+                                <Button onClick={handleSaveSchedules}>
+                                    <Save className="w-4 h-4 mr-2" /> Guardar Horarios
+                                </Button>
                             </div>
                         </Card>
                     </div>

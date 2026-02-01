@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { api } from '../../services/api'; // Import api for access to config
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -64,7 +65,61 @@ const AdvancedCalendar = ({
         noShow: true
     });
 
-    // Extract unique doctors
+    const [config, setConfig] = useState({
+        slotMinTime: '07:00:00',
+        slotMaxTime: '23:00:00',
+        weekends: false, // Default to false as per request "de lunes a viernes"
+        businessHours: { daysOfWeek: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '20:00' }
+    });
+
+    useEffect(() => {
+        loadCalendarConfig();
+    }, []);
+
+    const loadCalendarConfig = async () => {
+        try {
+            // Load resource schedules
+            const schedules = await api.config.get('resource_schedules');
+            const showWeekends = await api.config.get('show_weekends');
+
+            if (schedules && Object.keys(schedules).length > 0) {
+                // Calculate min start and max end
+                let minTime = '24:00';
+                let maxTime = '00:00';
+                const activeSchedules = Object.values(schedules);
+
+                if (activeSchedules.length > 0) {
+                    activeSchedules.forEach(s => {
+                        if (s.start < minTime) minTime = s.start;
+                        if (s.end > maxTime) maxTime = s.end;
+                    });
+
+                    // Add buffer if needed, or just set strictly
+                    // Format for FullCalendar: 'HH:MM:SS'
+                    const formatTime = (t) => t.length === 5 ? `${t}:00` : t;
+
+                    setConfig(prev => ({
+                        ...prev,
+                        slotMinTime: formatTime(minTime),
+                        slotMaxTime: formatTime(maxTime),
+                        weekends: !!showWeekends,
+                        businessHours: {
+                            daysOfWeek: showWeekends ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5],
+                            startTime: formatTime(minTime),
+                            endTime: formatTime(maxTime)
+                        }
+                    }));
+                }
+            } else {
+                // Initialize defaults if configured but empty, or just respect weekends toggle
+                if (showWeekends !== null) {
+                    setConfig(prev => ({ ...prev, weekends: !!showWeekends }));
+                }
+            }
+        } catch (e) {
+            console.error("Error loading calendar config", e);
+        }
+    };
     const availableDoctors = useMemo(() => {
         if (doctors && doctors.length > 0) return doctors;
         const unique = new Map();
@@ -459,13 +514,13 @@ const AdvancedCalendar = ({
                         dayGridMonth: { buttonText: 'Mes' }
                     }}
                     locale={esLocale}
-                    slotMinTime="07:00:00"
-                    slotMaxTime="23:00:00"
+                    slotMinTime={config.slotMinTime}
+                    slotMaxTime={config.slotMaxTime}
                     allDaySlot={false}
                     selectable={true}
                     selectMirror={true}
                     dayMaxEvents={true}
-                    weekends={true}
+                    weekends={config.weekends}
                     events={events} // Pass the transformed events
                     select={handleDateSelect}
                     eventClick={(info) => onEventClick(info.event.extendedProps)}
@@ -477,11 +532,7 @@ const AdvancedCalendar = ({
                     slotLabelInterval="01:00"
                     nowIndicator={true}
                     eventContent={renderEventContent}
-                    businessHours={{
-                        daysOfWeek: [1, 2, 3, 4, 5, 6], // Mon-Sat
-                        startTime: '08:00',
-                        endTime: '20:00',
-                    }}
+                    businessHours={config.businessHours}
                     datesSet={(arg) => setCurrentView(arg.view.type)}
                 />
             </div>
