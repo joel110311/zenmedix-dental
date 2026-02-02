@@ -48,8 +48,19 @@ export default function Login() {
                     <h1 className="text-3xl font-bold">
                         <span className="text-teal-500">Zen</span>
                         <span className="text-slate-800">Medix</span>
-                        <span className="text-blue-600 ml-1">Dental</span>
                     </h1>
+                    <div className="ml-1">
+                        {/* Tooth Icon instead of "Dental" text */}
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M17.5 2.5C15.5 2.5 13.8 3.2 12 4.5C10.2 3.2 8.5 2.5 6.5 2.5C3.2 2.5 1 5 1 9C1 15 5 21.5 5 21.5L8.5 18L12 20.5L15.5 18L19 21.5C19 21.5 23 15 23 9C23 5 20.8 2.5 17.5 2.5Z"
+                                stroke="#1d4ed8" /* blue-700 matching previous styles or image blue */
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </div>
                 </div>
                 <p className="mt-3 text-center text-sm text-slate-600">
                     Sistema de Historia Clínica

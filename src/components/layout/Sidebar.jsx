@@ -85,10 +85,23 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
                             </defs>
                         </svg>
                         {!collapsed && (
-                            <span className="text-xl font-bold">
-                                <span className="text-teal-500">Zen</span>
-                                <span className="text-slate-700 dark:text-white">Medix Dental</span>
-                            </span>
+                            <div className="flex items-center">
+                                <span className="text-xl font-bold">
+                                    <span className="text-teal-500">Zen</span>
+                                    <span className="text-slate-700 dark:text-white">Medix</span>
+                                </span>
+                                <div className="ml-1">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path
+                                            d="M17.5 2.5C15.5 2.5 13.8 3.2 12 4.5C10.2 3.2 8.5 2.5 6.5 2.5C3.2 2.5 1 5 1 9C1 15 5 21.5 5 21.5L8.5 18L12 20.5L15.5 18L19 21.5C19 21.5 23 15 23 9C23 5 20.8 2.5 17.5 2.5Z"
+                                            stroke="#3b82f6"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
                         )}
                     </div>
                     {/* Mobile Close Button */}
