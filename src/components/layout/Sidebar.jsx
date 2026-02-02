@@ -62,45 +62,39 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
             flex items-center gap-2
             ${collapsed ? 'justify-center w-full' : ''}
           `}>
-                        {/* ZenMedix Lotus/Medical Icon */}
-                        <svg className="w-9 h-9 flex-shrink-0" viewBox="0 0 48 48" fill="none">
-                            {/* Center lotus petal */}
-                            <path d="M24 6C24 6 16 16 16 26C16 36 24 40 24 40C24 40 32 36 32 26C32 16 24 6 24 6Z"
-                                fill="url(#zenGrad)" opacity="0.95" />
-                            {/* Left petal */}
-                            <path d="M10 16C10 16 12 26 20 32C20 32 14 24 14 16C14 8 10 16 10 16Z"
-                                fill="url(#zenGrad)" opacity="0.75" />
-                            {/* Right petal */}
-                            <path d="M38 16C38 16 36 26 28 32C28 32 34 24 34 16C34 8 38 16 38 16Z"
-                                fill="url(#zenGrad)" opacity="0.75" />
-                            {/* Heartbeat/ECG line - more visible */}
-                            <path d="M6 26L14 26L18 18L22 34L26 22L30 26L42 26"
-                                stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
-                                filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))" />
+                        {/* Stylized Tooth Icon - matching uploaded design */}
+                        <svg className="w-9 h-9 flex-shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* Main Tooth Outline */}
+                            <path
+                                d="M50 8C35 8 25 15 20 25C15 35 15 50 18 65C21 80 28 92 32 92C36 92 40 82 44 75C47 70 50 68 50 68C50 68 53 70 56 75C60 82 64 92 68 92C72 92 79 80 82 65C85 50 85 35 80 25C75 15 65 8 50 8Z"
+                                stroke="url(#toothGradSidebar)"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                fill="none"
+                            />
+                            {/* Inner Swirl Detail */}
+                            <path
+                                d="M55 30C65 35 68 50 60 60C52 70 40 65 38 55C36 45 45 40 52 45C58 50 55 58 50 58"
+                                stroke="url(#toothGradSidebar)"
+                                strokeWidth="5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                fill="none"
+                            />
                             <defs>
-                                <linearGradient id="zenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#14b8a6" />
-                                    <stop offset="100%" stopColor="#0d4f5f" />
+                                <linearGradient id="toothGradSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#1C64F2" />
+                                    <stop offset="100%" stopColor="#00C2FF" />
                                 </linearGradient>
                             </defs>
                         </svg>
                         {!collapsed && (
                             <div className="flex items-center">
                                 <span className="text-xl font-bold">
-                                    <span className="text-teal-500">Zen</span>
+                                    <span className="text-[#1C64F2]">Zen</span>
                                     <span className="text-slate-700 dark:text-white">Medix</span>
                                 </span>
-                                <div className="ml-1">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M17.5 2.5C15.5 2.5 13.8 3.2 12 4.5C10.2 3.2 8.5 2.5 6.5 2.5C3.2 2.5 1 5 1 9C1 15 5 21.5 5 21.5L8.5 18L12 20.5L15.5 18L19 21.5C19 21.5 23 15 23 9C23 5 20.8 2.5 17.5 2.5Z"
-                                            stroke="#3b82f6"
-                                            strokeWidth="2.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
-                                </div>
                             </div>
                         )}
                     </div>

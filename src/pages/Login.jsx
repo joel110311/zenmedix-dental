@@ -24,43 +24,37 @@ export default function Login() {
         <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex flex-col items-center gap-3">
-                    {/* ZenMedix Lotus/Medical Icon */}
-                    <svg className="w-20 h-20" viewBox="0 0 48 48" fill="none">
-                        {/* Center lotus petal */}
-                        <path d="M24 6C24 6 16 16 16 26C16 36 24 40 24 40C24 40 32 36 32 26C32 16 24 6 24 6Z"
-                            fill="url(#zenGradLogin)" opacity="0.95" />
-                        {/* Left petal */}
-                        <path d="M10 16C10 16 12 26 20 32C20 32 14 24 14 16C14 8 10 16 10 16Z"
-                            fill="url(#zenGradLogin)" opacity="0.75" />
-                        {/* Right petal */}
-                        <path d="M38 16C38 16 36 26 28 32C28 32 34 24 34 16C34 8 38 16 38 16Z"
-                            fill="url(#zenGradLogin)" opacity="0.75" />
-                        {/* Heartbeat/ECG line - more visible */}
-                        <path d="M6 26L14 26L18 18L22 34L26 22L30 26L42 26"
-                            stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    {/* Stylized Tooth Icon - matching uploaded design */}
+                    <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Main Tooth Outline */}
+                        <path
+                            d="M50 8C35 8 25 15 20 25C15 35 15 50 18 65C21 80 28 92 32 92C36 92 40 82 44 75C47 70 50 68 50 68C50 68 53 70 56 75C60 82 64 92 68 92C72 92 79 80 82 65C85 50 85 35 80 25C75 15 65 8 50 8Z"
+                            stroke="url(#toothGradLogin)"
+                            strokeWidth="5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                        />
+                        {/* Inner Swirl Detail */}
+                        <path
+                            d="M55 30C65 35 68 50 60 60C52 70 40 65 38 55C36 45 45 40 52 45C58 50 55 58 50 58"
+                            stroke="url(#toothGradLogin)"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                        />
                         <defs>
-                            <linearGradient id="zenGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#14b8a6" />
-                                <stop offset="100%" stopColor="#0d4f5f" />
+                            <linearGradient id="toothGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#1C64F2" />
+                                <stop offset="100%" stopColor="#00C2FF" />
                             </linearGradient>
                         </defs>
                     </svg>
-                    <h1 className="text-3xl font-bold">
-                        <span className="text-teal-500">Zen</span>
+                    <h1 className="text-3xl font-bold flex items-center gap-2">
+                        <span className="text-[#1C64F2]">Zen</span>
                         <span className="text-slate-800">Medix</span>
                     </h1>
-                    <div className="ml-1">
-                        {/* Tooth Icon instead of "Dental" text */}
-                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M17.5 2.5C15.5 2.5 13.8 3.2 12 4.5C10.2 3.2 8.5 2.5 6.5 2.5C3.2 2.5 1 5 1 9C1 15 5 21.5 5 21.5L8.5 18L12 20.5L15.5 18L19 21.5C19 21.5 23 15 23 9C23 5 20.8 2.5 17.5 2.5Z"
-                                stroke="#1d4ed8" /* blue-700 matching previous styles or image blue */
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                    </div>
                 </div>
                 <p className="mt-3 text-center text-sm text-slate-600">
                     Sistema de Historia Clínica
