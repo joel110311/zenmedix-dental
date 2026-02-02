@@ -132,7 +132,12 @@ export default function PrintRecipe() {
                                 <Save className="w-4 h-4 mr-1" /> Guardar
                             </Button>
                         ) : (
-                            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+                            <Button variant="secondary" size="sm" onClick={() => {
+                                // Initialize editMeds with current medications
+                                setEditMeds(consultation?.medications || []);
+                                setEditIndications(consultation?.treatmentPlan || '');
+                                setEditing(true);
+                            }}>
                                 <Edit2 className="w-4 h-4 mr-1" /> Editar
                             </Button>
                         )}
@@ -207,37 +212,7 @@ export default function PrintRecipe() {
                                 </div>
                             )}
 
-                            {/* Budget Table (Replacing Vitals, Weight, Height) */}
-                            {settings.recipeLayout.elements?.budgetTable?.visible && latestBudget && (
-                                <div style={{
-                                    position: 'absolute',
-                                    left: `${settings.recipeLayout.elements.budgetTable.x * 0.264583}mm`,
-                                    top: `${settings.recipeLayout.elements.budgetTable.y * 0.264583}mm`,
-                                    width: `${settings.recipeLayout.elements.budgetTable.width * 0.264583}mm`,
-                                    fontSize: `${settings.recipeLayout.elements.budgetTable.fontSize || 9}pt`,
-                                    fontWeight: settings.recipeLayout.elements.budgetTable.bold ? 'bold' : 'normal'
-                                }}>
-                                    <div className="border border-slate-300 rounded overflow-hidden">
-                                        <div className="bg-slate-100 text-[8px] font-bold p-1 border-b border-slate-300 uppercase">Presupuesto</div>
-                                        <table className="w-full text-[8px]">
-                                            <tbody>
-                                                {latestBudget.items?.map((item, idx) => (
-                                                    <tr key={idx} className="border-b border-slate-100 last:border-0">
-                                                        <td className="p-1">{item.name}</td>
-                                                        <td className="p-1 text-right font-semibold">${item.price}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr className="bg-slate-50">
-                                                    <td className="p-1 font-bold text-slate-500">Total</td>
-                                                    <td className="p-1 text-right font-bold">${latestBudget.total}</td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
+                            {/* Budget Table removed per user request */}
 
                             {/* Medications */}
                             {settings.recipeLayout.elements?.medications?.visible && (
@@ -383,28 +358,7 @@ export default function PrintRecipe() {
                                         </span>
                                     </div>
 
-                                    {/* Budget Table in Right Column */}
-                                    {latestBudget && (
-                                        <div className="border rounded bg-slate-50 p-2 mt-2 text-left">
-                                            <h3 className="text-[9px] font-bold text-slate-700 mb-1 uppercase border-b border-slate-200 pb-1">Presupuesto Activo</h3>
-                                            <table className="w-full text-[9px]">
-                                                <tbody>
-                                                    {latestBudget.items?.map((item, idx) => (
-                                                        <tr key={idx} className="border-b border-slate-100 last:border-0">
-                                                            <td className="py-0.5 truncate max-w-[100px]">{item.name}</td>
-                                                            <td className="py-0.5 text-right font-semibold">${item.price}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                                <tfoot>
-                                                    <tr className="border-t border-slate-200">
-                                                        <td className="pt-1 text-[9px] text-slate-500">Total</td>
-                                                        <td className="pt-1 text-right font-bold text-slate-800 text-[10px]">${latestBudget.total}</td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
-                                    )}
+                                    {/* Budget Table removed per user request */}
                                 </div>
                             </section>
 
