@@ -76,10 +76,18 @@ export default function DictadoConsulta({ onSummaryReady }) {
 
         recognition.onerror = (event) => {
             console.error('❌ Speech recognition error:', event.error);
-            if (event.error !== 'aborted') {
-                toast.error('Error en reconocimiento de voz: ' + event.error);
+            setIsRecording(false); // Stop UI updates immediately
+
+            if (event.error === 'not-allowed') {
+                toast.error('Permiso de micrófono denegado. Verifica que has dado acceso y que el sitio usa HTTPS (candadito seguro).', { duration: 5000 });
+            } else if (event.error === 'network') {
+                toast.error('Error de red. Verifica tu conexión a internet.');
+            } else if (event.error === 'no-speech') {
+                // Ignore no-speech errors usually, just stop or restart
+                // toast.error('No se detectó voz.'); 
+            } else if (event.error !== 'aborted') {
+                toast.error('Error: ' + event.error);
             }
-            setIsRecording(false);
         };
 
         recognition.onend = () => {
