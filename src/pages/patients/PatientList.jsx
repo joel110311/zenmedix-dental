@@ -1,37 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Calendar, ChevronRight, Edit, Phone, Plus, Search, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Eye, Edit, Phone, Calendar } from 'lucide-react';
 import { api } from '../../services/api';
 import { usePatient } from '../../context/PatientContext';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { Spinner } from '../../components/ui/Spinner';
 import { toast } from 'sonner';
 
-// Calculate age from DOB
 const calculateAge = (dob) => {
     if (!dob) return '-';
     const today = new Date();
     const birthDate = new Date(dob);
     let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
+    const monthDifference = today.getMonth() - birthDate.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+        age -= 1;
     }
     return age;
 };
 
-// Format date for display
 const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 export default function PatientList() {
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const deferredSearchTerm = useDeferredValue(searchTerm);
     const navigate = useNavigate();
     const { setActivePatient } = usePatient();
 
@@ -51,11 +48,33 @@ export default function PatientList() {
         }
     };
 
-    const filteredPatients = patients.filter(p => {
-        const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
-        const search = searchTerm.toLowerCase();
-        return fullName.includes(search) || (p.phone && p.phone.includes(search));
-    });
+    const filteredPatients = useMemo(() => {
+        const normalizedSearch = deferredSearchTerm.trim().toLowerCase();
+        if (!normalizedSearch) return patients;
+
+        return patients.filter((patient) => {
+            const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
+            return fullName.includes(normalizedSearch) || (patient.phone && patient.phone.includes(normalizedSearch));
+        });
+    }, [deferredSearchTerm, patients]);
+
+    const stats = useMemo(() => {
+        const withPhone = patients.filter((patient) => Boolean(patient.phone)).length;
+        const withRecentVisit = patients.filter((patient) => Boolean(patient.lastVisit)).length;
+        const newThisMonth = patients.filter((patient) => {
+            if (!patient.created) return false;
+            const createdAt = new Date(patient.created);
+            const now = new Date();
+            return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
+        }).length;
+
+        return {
+            total: patients.length,
+            withPhone,
+            withRecentVisit,
+            newThisMonth,
+        };
+    }, [patients]);
 
     const handleViewHistory = (patient) => {
         setActivePatient(patient);
@@ -66,118 +85,181 @@ export default function PatientList() {
         navigate(`/pacientes/editar/${patient.id}`);
     };
 
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-slate-800">Directorio de Pacientes</h1>
-                <Button onClick={() => navigate('/pacientes/nuevo')}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nuevo Paciente
-                </Button>
+    if (loading) {
+        return (
+            <div className="glass rounded-[2rem] border border-white/60 px-6 py-20 dark:border-white/10">
+                <Spinner size="lg" />
             </div>
+        );
+    }
 
-            <Card>
-                <div className="mb-6">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombre o teléfono..."
-                            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+    return (
+        <div className="space-y-4 md:space-y-5">
+            <section className="glass rounded-[2.2rem] border border-white/60 p-6 shadow-[0_32px_80px_-42px_rgba(16,37,35,0.38)] dark:border-white/10 md:p-7 lg:p-8">
+                <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+                    <div>
+                        <p className="section-kicker">Concierge directory</p>
+                        <h1 className="mt-5 text-4xl font-semibold leading-tight text-[color:var(--text-primary)] md:text-5xl">
+                            Directorio de pacientes con presencia de producto premium.
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-base leading-7 text-[color:var(--text-secondary)]">
+                            Un modulo limpio y vendible para navegar expediente, seguimiento y acceso rapido a cada paciente.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {[
+                            { label: 'Pacientes', value: stats.total, icon: <Users className="h-4 w-4" /> },
+                            { label: 'Con telefono', value: stats.withPhone, icon: <Phone className="h-4 w-4" /> },
+                            { label: 'Con visita', value: stats.withRecentVisit, icon: <Calendar className="h-4 w-4" /> },
+                            { label: 'Nuevos mes', value: stats.newThisMonth, icon: <Plus className="h-4 w-4" /> },
+                        ].map((item) => (
+                            <div key={item.label} className="rounded-[1.6rem] border border-white/60 bg-white/68 p-4 shadow-[0_22px_42px_-30px_rgba(16,37,35,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+                                <div className="flex items-center justify-between">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,var(--primary-700),var(--primary-500))] text-white shadow-[0_18px_32px_-22px_rgba(15,124,120,0.72)]">
+                                        {item.icon}
+                                    </span>
+                                    <ChevronRight className="h-4 w-4 text-[color:var(--text-muted)]" />
+                                </div>
+                                <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[color:var(--text-primary)]">{item.value}</p>
+                                <p className="mt-1 text-sm font-semibold text-[color:var(--text-secondary)]">{item.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="glass rounded-[2rem] border border-white/60 p-5 shadow-[0_30px_70px_-40px_rgba(16,37,35,0.32)] dark:border-white/10 md:p-6">
+                <div className="flex flex-col gap-4 border-b border-black/5 pb-5 dark:border-white/10 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <p className="section-kicker">Patient search</p>
+                        <h2 className="mt-4 text-2xl font-semibold text-[color:var(--text-primary)]">Explora el directorio</h2>
+                        <p className="mt-2 text-sm leading-6 text-[color:var(--text-muted)]">
+                            Busqueda, acceso rapido al expediente y una tabla mas elegante para recepcion y equipo clinico.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <div className="relative min-w-[18rem]">
+                            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--text-muted)]" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre o telefono"
+                                className="w-full pl-11 pr-4 py-3"
+                                value={searchTerm}
+                                onChange={(event) => setSearchTerm(event.target.value)}
+                            />
+                        </div>
+                        <Button onClick={() => navigate('/pacientes/nuevo')} size="lg">
+                            <Plus className="h-4 w-4" />
+                            Nuevo paciente
+                        </Button>
                     </div>
                 </div>
 
-                {loading ? (
-                    <Spinner />
-                ) : filteredPatients.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500">
-                        <p>No se encontraron pacientes.</p>
+                {filteredPatients.length === 0 ? (
+                    <div className="rounded-[1.6rem] border border-dashed border-black/10 bg-white/45 px-6 py-14 text-center text-sm text-[color:var(--text-muted)] dark:border-white/10 dark:bg-white/[0.02]">
+                        No se encontraron pacientes con ese criterio.
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        {/* Desktop/Tablet Table */}
-                        <table className="w-full hidden md:table">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="text-left py-3 px-3 text-sm font-semibold text-slate-600">Nombre Completo</th>
-                                    <th className="text-left py-3 px-2 text-sm font-semibold text-slate-600 w-16">Edad</th>
-                                    <th className="text-left py-3 px-2 text-sm font-semibold text-slate-600">
-                                        <Phone className="w-4 h-4 inline mr-1" />
-                                        Teléfono
-                                    </th>
-                                    <th className="text-left py-3 px-2 text-sm font-semibold text-slate-600">
-                                        <Calendar className="w-4 h-4 inline mr-1" />
-                                        Última Visita
-                                    </th>
-                                    <th className="text-right py-3 px-3 text-sm font-semibold text-slate-600 w-28">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredPatients.map((patient) => (
-                                    <tr
-                                        key={patient.id}
-                                        className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                        onClick={() => handleViewHistory(patient)}
-                                    >
-                                        <td className="py-3 px-3">
-                                            <div>
-                                                <p className="font-medium text-primary hover:underline">{patient.firstName} {patient.lastName}</p>
-                                                {patient.idNumber && <p className="text-xs text-slate-500">{patient.idType}: {patient.idNumber}</p>}
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-2 text-sm text-slate-600">{calculateAge(patient.dob)}</td>
-                                        <td className="py-3 px-2 text-sm text-slate-600">{patient.phone || '-'}</td>
-                                        <td className="py-3 px-2 text-sm text-slate-600">{formatDate(patient.lastVisit)}</td>
-                                        <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEdit(patient)}
-                                                title="Editar paciente"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                        </td>
+                    <>
+                        <div className="mt-5 hidden overflow-hidden rounded-[1.6rem] border border-white/60 bg-white/66 dark:border-white/10 dark:bg-white/[0.04] md:block">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="text-left text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
+                                        <th className="px-5 py-4">Paciente</th>
+                                        <th className="px-4 py-4">Edad</th>
+                                        <th className="px-4 py-4">Telefono</th>
+                                        <th className="px-4 py-4">Ultima visita</th>
+                                        <th className="px-5 py-4 text-right">Acciones</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {filteredPatients.map((patient) => (
+                                        <tr
+                                            key={patient.id}
+                                            className="cursor-pointer border-t border-black/5 transition hover:bg-white/80 dark:border-white/10 dark:hover:bg-white/[0.05]"
+                                            onClick={() => handleViewHistory(patient)}
+                                        >
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,var(--primary-700),var(--primary-500))] text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(15,124,120,0.72)]">
+                                                        {patient.firstName?.[0]}{patient.lastName?.[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-[color:var(--text-primary)]">
+                                                            {patient.firstName} {patient.lastName}
+                                                        </p>
+                                                        <p className="text-xs text-[color:var(--text-muted)]">
+                                                            {patient.dni ? `ID ${patient.dni}` : 'Expediente listo'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 text-sm font-medium text-[color:var(--text-secondary)]">
+                                                {calculateAge(patient.dob)}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-[color:var(--text-secondary)]">
+                                                {patient.phone || '-'}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-[color:var(--text-secondary)]">
+                                                {formatDate(patient.lastVisit)}
+                                            </td>
+                                            <td className="px-5 py-4 text-right" onClick={(event) => event.stopPropagation()}>
+                                                <Button variant="secondary" size="sm" onClick={() => handleEdit(patient)}>
+                                                    <Edit className="h-4 w-4" />
+                                                    Editar
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                        {/* Mobile List */}
-                        <div className="md:hidden divide-y divide-slate-100">
+                        <div className="mt-5 space-y-3 md:hidden">
                             {filteredPatients.map((patient) => (
-                                <div
+                                <article
                                     key={patient.id}
-                                    className="py-3 px-2 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer"
+                                    className="rounded-[1.55rem] border border-white/60 bg-white/68 p-4 shadow-[0_22px_42px_-30px_rgba(16,37,35,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]"
                                     onClick={() => handleViewHistory(patient)}
                                 >
-                                    <div className="flex justify-between items-start gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-primary truncate">
-                                                {patient.firstName} {patient.lastName}
-                                            </p>
-                                            {patient.idNumber && <p className="text-xs text-slate-500">{patient.idType}: {patient.idNumber}</p>}
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,var(--primary-700),var(--primary-500))] text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(15,124,120,0.72)]">
+                                                {patient.firstName?.[0]}{patient.lastName?.[0]}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate font-semibold text-[color:var(--text-primary)]">
+                                                    {patient.firstName} {patient.lastName}
+                                                </p>
+                                                <p className="text-xs text-[color:var(--text-muted)]">
+                                                    {patient.phone || 'Sin telefono registrado'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <p className="text-sm font-medium text-slate-700">{calculateAge(patient.dob)} años</p>
-                                            <p className="text-xs text-slate-400">{formatDate(patient.lastVisit)}</p>
-                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={(event) => {
+                                            event.stopPropagation();
+                                            handleEdit(patient);
+                                        }}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    {patient.phone && (
-                                        <p className="text-xs text-slate-500 mt-1">
-                                            <Phone className="w-3 h-3 inline mr-1" />
-                                            {patient.phone}
-                                        </p>
-                                    )}
-                                </div>
+
+                                    <div className="mt-4 flex items-center justify-between text-sm">
+                                        <span className="text-[color:var(--text-muted)]">Edad</span>
+                                        <span className="font-semibold text-[color:var(--text-primary)]">{calculateAge(patient.dob)}</span>
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between text-sm">
+                                        <span className="text-[color:var(--text-muted)]">Ultima visita</span>
+                                        <span className="font-semibold text-[color:var(--text-primary)]">{formatDate(patient.lastVisit)}</span>
+                                    </div>
+                                </article>
                             ))}
                         </div>
-                    </div>
+                    </>
                 )}
-            </Card>
+            </section>
         </div>
     );
 }

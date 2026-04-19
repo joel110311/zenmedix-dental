@@ -1,27 +1,26 @@
 export const Card = ({ children, className = '', title, action }) => {
     return (
-        <div className={`
-      bg-white dark:bg-[#14171C] 
-      rounded-2xl shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
-      border border-slate-200 dark:border-[#2A2E35] 
-      overflow-hidden 
-      transition-all duration-200
-      hover:shadow-lg dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.4)]
-      ${className}
-    `}>
+        <section
+            className={`
+                card-premium overflow-hidden border
+                border-white/60 dark:border-white/10
+                ${className}
+            `}
+        >
             {(title || action) && (
-                <div className={`
-          px-6 py-4 border-b border-slate-100 dark:border-[#1e2328] 
-          flex justify-between items-center 
-          bg-slate-50/50 dark:bg-[#0E1014]
-        `}>
-                    {title && <h3 className="text-lg font-semibold text-slate-800 dark:text-white">{title}</h3>}
-                    {action && <div>{action}</div>}
+                <div className="flex items-center justify-between gap-4 border-b border-black/5 px-6 py-5 dark:border-white/10">
+                    {title ? (
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
+                                Workspace
+                            </p>
+                            <h3 className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">{title}</h3>
+                        </div>
+                    ) : <div />}
+                    {action && <div className="shrink-0">{action}</div>}
                 </div>
             )}
-            <div className="p-6">
-                {children}
-            </div>
-        </div>
+            <div className="p-6 md:p-7">{children}</div>
+        </section>
     );
 };

@@ -1,47 +1,45 @@
 // Theme configuration store for ZenMedix
-// Based on estetica-dashboard implementation
+// Shared by the app shell and the premium UI system
 
-// Available color themes: Médico (original blue) and Premium Verde Lima
 export const THEMES = {
     medico: {
         id: 'medico',
-        name: 'Médico',
-        description: 'Azul profesional médico',
+        name: 'Medico',
+        description: 'Azul quirurgico contemporaneo',
         colors: {
-            50: '#eff6ff',
-            100: '#dbeafe',
-            200: '#bfdbfe',
-            300: '#93c5fd',
-            400: '#60a5fa',
-            500: '#3b82f6',
-            600: '#2563eb',
-            700: '#1d4ed8',
-            800: '#1e40af',
-            900: '#1e3a8a',
+            50: '#eef8ff',
+            100: '#d8edff',
+            200: '#b5dbff',
+            300: '#7dc1ff',
+            400: '#3ea0ff',
+            500: '#157ef3',
+            600: '#0d66d7',
+            700: '#0f4fa4',
+            800: '#123f80',
+            900: '#16376a',
         },
     },
     premium: {
         id: 'premium',
         name: 'Premium',
-        description: 'Verde lima fintech',
+        description: 'Teal dental premium',
         colors: {
-            50: '#f7fee7',
-            100: '#ecfccb',
-            200: '#d9f99d',
-            300: '#bef264',
-            400: '#a3e635',
-            500: '#84cc16',
-            600: '#65a30d',
-            700: '#4d7c0f',
-            800: '#3f6212',
-            900: '#365314',
+            50: '#edf9f7',
+            100: '#d5f1ec',
+            200: '#afe2da',
+            300: '#78cdc1',
+            400: '#39b2a5',
+            500: '#159488',
+            600: '#0f7c78',
+            700: '#10615f',
+            800: '#114d4d',
+            900: '#123f40',
         },
     },
 }
 
 export const MODES = ['light', 'dark', 'system']
 
-// Get current theme
 export function getConfigTheme() {
     return localStorage.getItem('medflow_theme') || 'medico'
 }
@@ -51,7 +49,6 @@ export function saveConfigTheme(theme) {
     applyTheme(theme)
 }
 
-// Get current mode
 export function getConfigMode() {
     return localStorage.getItem('medflow_mode') || 'light'
 }
@@ -61,23 +58,37 @@ export function saveConfigMode(mode) {
     applyMode(mode)
 }
 
-// Apply theme colors - Force update CSS immediately
+function hexToRgbChannels(hexColor) {
+    const hex = hexColor.replace('#', '')
+    const normalized = hex.length === 3
+        ? hex.split('').map((char) => `${char}${char}`).join('')
+        : hex
+
+    const intValue = Number.parseInt(normalized, 16)
+    const r = (intValue >> 16) & 255
+    const g = (intValue >> 8) & 255
+    const b = intValue & 255
+
+    return `${r} ${g} ${b}`
+}
+
 export function applyTheme(themeId) {
     const theme = THEMES[themeId] || THEMES.medico
     const root = document.documentElement
 
-    // Apply each color as CSS variable
     Object.entries(theme.colors).forEach(([key, value]) => {
         root.style.setProperty(`--primary-${key}`, value)
     })
 
-    // Force repaint
+    root.style.setProperty('--color-primary', hexToRgbChannels(theme.colors[600]))
+    root.style.setProperty('--color-primary-hover', hexToRgbChannels(theme.colors[700]))
+    root.style.setProperty('--color-primary-light', hexToRgbChannels(theme.colors[50]))
+
     root.style.display = 'none'
-    root.offsetHeight // trigger reflow
+    root.offsetHeight
     root.style.display = ''
 }
 
-// Apply dark/light mode
 export function applyMode(mode) {
     const root = document.documentElement
 
@@ -89,7 +100,6 @@ export function applyMode(mode) {
     }
 }
 
-// Initialize theme on app load
 export function initializeTheme() {
     const theme = getConfigTheme()
     const mode = getConfigMode()
@@ -97,10 +107,9 @@ export function initializeTheme() {
     applyTheme(theme)
     applyMode(mode)
 
-    // Listen for system preference changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
         if (getConfigMode() === 'system') {
-            document.documentElement.classList.toggle('dark', e.matches)
+            document.documentElement.classList.toggle('dark', event.matches)
         }
     })
 }

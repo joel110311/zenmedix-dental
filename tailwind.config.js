@@ -8,9 +8,9 @@ export default {
         extend: {
             colors: {
                 primary: {
-                    DEFAULT: 'rgb(var(--color-primary, 37 99 235))',
-                    hover: 'rgb(var(--color-primary-hover, 29 78 216))',
-                    light: 'rgb(var(--color-primary-light, 239 246 255))',
+                    DEFAULT: 'rgb(var(--color-primary, 15 124 120))',
+                    hover: 'rgb(var(--color-primary-hover, 16 97 95))',
+                    light: 'rgb(var(--color-primary-light, 237 249 247))',
                 },
                 danger: {
                     DEFAULT: '#dc2626',
@@ -32,7 +32,8 @@ export default {
                 },
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
+                sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                display: ['Fraunces', 'Georgia', 'serif'],
             },
         },
     },

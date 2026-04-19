@@ -12,43 +12,46 @@ export const Button = ({
     ...props
 }) => {
     const baseStyles = `
-    inline-flex items-center justify-center font-medium 
-    focus:outline-none focus:ring-2 focus:ring-offset-2 
-    disabled:opacity-50 disabled:cursor-not-allowed 
-    transition-all duration-200
-  `;
+        inline-flex items-center justify-center gap-2 font-semibold tracking-[0.01em]
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+        focus-visible:ring-offset-transparent disabled:opacity-55 disabled:cursor-not-allowed
+        transition-all duration-200 select-none
+    `;
 
     const sizes = {
-        sm: 'px-3 py-1.5 text-sm rounded-lg',
-        md: 'px-4 py-2 text-sm rounded-xl',
-        lg: 'px-6 py-3 text-base rounded-xl',
+        sm: 'min-h-10 px-3.5 text-sm rounded-2xl',
+        md: 'min-h-11 px-4.5 text-sm rounded-[1.15rem]',
+        lg: 'min-h-12 px-6 text-base rounded-[1.25rem]',
     };
 
     const variants = {
         primary: `
-      bg-primary text-white 
-      hover:opacity-90 hover:shadow-lg
-      dark:text-black dark:font-semibold
-      focus:ring-primary
-    `,
+            border border-transparent text-white
+            bg-[linear-gradient(135deg,var(--primary-700),var(--primary-500))]
+            shadow-[0_24px_44px_-26px_rgba(15,124,120,0.7)]
+            hover:-translate-y-0.5 hover:shadow-[0_28px_56px_-28px_rgba(15,124,120,0.8)]
+            active:translate-y-0
+        `,
         secondary: `
-      bg-white dark:bg-[#1a1d22] 
-      text-slate-700 dark:text-[#B0B3B8] 
-      border border-slate-300 dark:border-[#2A2E35] 
-      hover:bg-slate-50 dark:hover:bg-[#14171C] hover:border-slate-400 dark:hover:border-[#3A3E45]
-      focus:ring-primary
-    `,
+            border text-[color:var(--text-primary)]
+            border-[color:var(--border-default)]
+            bg-white/70 dark:bg-white/[0.04]
+            hover:bg-white/90 dark:hover:bg-white/[0.07]
+            hover:border-[color:var(--border-strong)]
+            backdrop-blur-xl
+        `,
         danger: `
-      bg-red-500 text-white 
-      hover:bg-red-600 
-      focus:ring-red-500
-    `,
+            border border-transparent text-white
+            bg-[linear-gradient(135deg,#cc5e4b,#e4816f)]
+            shadow-[0_24px_44px_-26px_rgba(204,94,75,0.6)]
+            hover:-translate-y-0.5 hover:shadow-[0_28px_56px_-28px_rgba(204,94,75,0.7)]
+        `,
         ghost: `
-      text-slate-600 dark:text-[#6B6F76] 
-      hover:bg-slate-100 dark:hover:bg-[#1a1d22] 
-      hover:text-slate-900 dark:hover:text-white
-      focus:ring-slate-500
-    `,
+            border border-transparent bg-transparent
+            text-[color:var(--text-secondary)]
+            hover:bg-black/[0.03] dark:hover:bg-white/[0.06]
+            hover:text-[color:var(--text-primary)]
+        `,
     };
 
     return (
@@ -59,7 +62,7 @@ export const Button = ({
             onClick={onClick}
             {...props}
         >
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {children}
         </button>
     );

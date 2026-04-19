@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -5,41 +6,51 @@ import { PatientProvider } from './context/PatientContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { PatientLayout } from './components/layout/PatientLayout';
-
-// Pages
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import PatientList from './pages/patients/PatientList';
-import PatientForm from './pages/patients/PatientForm';
-
-// V2 Pages
-import PatientOverview from './pages/patient-profile/PatientOverview';
-import PatientHistory from './pages/patient-profile/PatientHistory';
-import ConsultationList from './pages/patient-profile/ConsultationList';
-import NewConsultation from './pages/patient-profile/NewConsultation';
-import LabResults from './pages/patient-profile/LabResults';
-import EvolutionNotes from './pages/patient-profile/EvolutionNotes';
-import OdontogramPage from './pages/patient-profile/OdontogramPage';
-import BudgetsPage from './pages/patient-profile/BudgetsPage';
-import PrintRecipe from './pages/print/PrintRecipe';
-import PrintHistory from './pages/print/PrintHistory';
-import PrintStudyRequest from './pages/print/PrintStudyRequest';
-import PrintBudgetPlan from './pages/print/PrintBudgetPlan';
-
-// V3 Pages
-import AppointmentsPage from './pages/appointments/AppointmentsPage';
-import SettingsPage from './pages/settings/SettingsPage';
-import RecipeLayoutEditor from './pages/settings/RecipeLayoutEditor';
-import AuditLogPage from './pages/admin/AuditLogPage';
+import { FullScreenLoader } from './components/ui/RouteLoader';
+import {
+    AppointmentsPage,
+    AuditLogPage,
+    BudgetsPage,
+    ConsultationList,
+    Dashboard,
+    EvolutionNotes,
+    LabResults,
+    Login,
+    NewConsultation,
+    OdontogramPage,
+    PatientForm,
+    PatientHistory,
+    PatientList,
+    PatientOverview,
+    PrintBudgetPlan,
+    PrintHistory,
+    PrintRecipe,
+    PrintStudyRequest,
+    RecipeLayoutEditor,
+    SettingsPage,
+} from './lib/routeRegistry';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-slate-500">Cargando...</div>;
+  if (loading) {
+    return (
+      <FullScreenLoader
+        title="Validando acceso"
+        message="Cargando permisos y contexto clinico de forma segura."
+      />
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
 
   return children;
 };
+
+const renderStandaloneRoute = (routeElement) => (
+  <Suspense fallback={<FullScreenLoader />}>
+    {routeElement}
+  </Suspense>
+);
 
 function App() {
   return (
@@ -49,7 +60,7 @@ function App() {
         <SettingsProvider>
           <PatientProvider>
             <Routes>
-              <Route path="/login" element={<Login />} />
+              <Route path="/login" element={renderStandaloneRoute(<Login />)} />
 
               <Route path="/" element={
                 <ProtectedRoute>
@@ -90,22 +101,22 @@ function App() {
               {/* Print Views (No sidebar) */}
               <Route path="/imprimir/receta/:id" element={
                 <ProtectedRoute>
-                  <PrintRecipe />
+                  {renderStandaloneRoute(<PrintRecipe />)}
                 </ProtectedRoute>
               } />
               <Route path="/imprimir/historia/:id" element={
                 <ProtectedRoute>
-                  <PrintHistory />
+                  {renderStandaloneRoute(<PrintHistory />)}
                 </ProtectedRoute>
               } />
               <Route path="/imprimir/solicitud/:id" element={
                 <ProtectedRoute>
-                  <PrintStudyRequest />
+                  {renderStandaloneRoute(<PrintStudyRequest />)}
                 </ProtectedRoute>
               } />
               <Route path="/imprimir/presupuesto/:id" element={
                 <ProtectedRoute>
-                  <PrintBudgetPlan />
+                  {renderStandaloneRoute(<PrintBudgetPlan />)}
                 </ProtectedRoute>
               } />
             </Routes>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { CalendarPlus, Trash2, Search, Clock, User, Phone, ChevronLeft, ChevronRight, Building2, FileText, MessageCircle, ExternalLink, Plus, Save } from 'lucide-react';
+import { CalendarPlus, Trash2, Search, Clock, User, Phone, ChevronLeft, ChevronRight, Building2, FileText, MessageCircle, ExternalLink, Plus, Save, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 import { useSettings } from '../../context/SettingsContext';
 import { dentalService } from '../../services/dentalService';
@@ -347,42 +347,97 @@ export default function AppointmentsPage() {
         a.phone?.includes(searchTerm)
     );
 
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Gestión de Citas</h1>
+    const agendaStats = [
+        {
+            label: 'Citas visibles',
+            value: displayedAppointments.length,
+            note: 'Agenda filtrada en tiempo real',
+            icon: <CalendarPlus className="h-4 w-4" />,
+        },
+        {
+            label: 'Pacientes listos',
+            value: patients.length,
+            note: 'Directorio disponible para recepcion',
+            icon: <User className="h-4 w-4" />,
+        },
+        {
+            label: 'Recursos',
+            value: resources.length,
+            note: 'Sillones y boxes operativos',
+            icon: <Building2 className="h-4 w-4" />,
+        },
+        {
+            label: 'Por confirmar',
+            value: futureAppointments.length,
+            note: 'Citas de hoy en adelante',
+            icon: <Clock className="h-4 w-4" />,
+        },
+    ];
 
-            {/* Tab Buttons */}
-            <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('calendar')}
-                    className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === 'calendar'
-                        ? 'text-primary border-b-2 border-primary'
-                        : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                >
-                    <CalendarPlus className="w-4 h-4" /> Calendario
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('schedule')}
-                    className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === 'schedule'
-                        ? 'text-primary border-b-2 border-primary'
-                        : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                >
-                    <CalendarPlus className="w-4 h-4" /> Agendar
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('delete')}
-                    className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${activeTab === 'delete'
-                        ? 'text-primary border-b-2 border-primary'
-                        : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                </button>
+    return (
+        <div className="space-y-4 md:space-y-5">
+            <section className="glass rounded-[2.2rem] border border-white/60 p-6 shadow-[0_32px_80px_-42px_rgba(16,37,35,0.36)] dark:border-white/10 md:p-7 lg:p-8">
+                <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+                    <div>
+                        <p className="section-kicker">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Scheduling suite
+                        </p>
+                        <h1 className="mt-5 text-4xl font-semibold leading-tight text-[color:var(--text-primary)] md:text-5xl">
+                            Agenda dental con una presencia de producto mas limpia, mas premium y lista para venderse.
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-base leading-7 text-[color:var(--text-secondary)]">
+                            Calendario, registro y limpieza de citas dentro de una experiencia operativa que se siente mas ejecutiva y mas facil de presentar a una clinica.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {agendaStats.map((item) => (
+                            <div key={item.label} className="rounded-[1.6rem] border border-white/60 bg-white/68 p-4 shadow-[0_22px_42px_-30px_rgba(16,37,35,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+                                <div className="flex items-center justify-between">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,var(--primary-700),var(--primary-500))] text-white shadow-[0_18px_32px_-22px_rgba(15,124,120,0.72)]">
+                                        {item.icon}
+                                    </span>
+                                    <ChevronRight className="h-4 w-4 text-[color:var(--text-muted)]" />
+                                </div>
+                                <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[color:var(--text-primary)]">{item.value}</p>
+                                <p className="mt-1 text-sm font-semibold text-[color:var(--text-secondary)]">{item.label}</p>
+                                <p className="mt-1 text-xs leading-5 text-[color:var(--text-muted)]">{item.note}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <div className="glass rounded-[2rem] border border-white/60 p-3 shadow-[0_28px_64px_-38px_rgba(16,37,35,0.32)] dark:border-white/10">
+                <div className="flex flex-wrap gap-2">
+                    {[
+                        { id: 'calendar', label: 'Calendario', icon: CalendarPlus },
+                        { id: 'schedule', label: 'Agendar', icon: CalendarPlus },
+                        { id: 'delete', label: 'Eliminar', icon: Trash2 },
+                    ].map((tab) => {
+                        const Icon = tab.icon;
+                        const active = activeTab === tab.id;
+
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`
+                                    inline-flex items-center gap-2 rounded-[1.2rem] border px-4 py-3 text-sm font-semibold transition-all duration-200
+                                    ${active
+                                        ? 'nav-active border-[color:var(--border-strong)]'
+                                        : 'border-transparent text-[color:var(--text-secondary)] hover:border-black/5 hover:bg-white/55 hover:text-[color:var(--text-primary)] dark:hover:border-white/10 dark:hover:bg-white/[0.05]'
+                                    }
+                                `}
+                            >
+                                <Icon className="h-4 w-4" />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Calendar Tab */}

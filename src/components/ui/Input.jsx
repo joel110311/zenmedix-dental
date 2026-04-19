@@ -4,20 +4,21 @@ export const Input = forwardRef(({ label, error, className = '', type = 'text', 
     return (
         <div className="w-full">
             {label && (
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="mb-2 block text-sm font-semibold tracking-[0.01em] text-[color:var(--text-secondary)]">
                     {label}
                 </label>
             )}
             <input
                 ref={ref}
                 type={type}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm
-          ${error ? 'border-danger focus:ring-danger focus:border-danger' : 'border-slate-300'}
-          ${className}
-        `}
+                className={`
+                    w-full rounded-[1.15rem] px-4 py-3 text-sm
+                    ${error ? 'border-[color:var(--danger)] focus:border-[color:var(--danger)] focus:ring-[color:var(--danger)]/20' : ''}
+                    ${className}
+                `}
                 {...props}
             />
-            {error && <p className="mt-1 text-sm text-danger">{error.message}</p>}
+            {error && <p className="mt-2 text-sm font-medium text-[color:var(--danger)]">{error.message}</p>}
         </div>
     );
 });
